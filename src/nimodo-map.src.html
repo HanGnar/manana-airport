@@ -1,0 +1,1173 @@
+<title>마냐나 공항 지도</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: 데스크톱은 왼쪽 소개 + 오른쪽 iPhone 18 Pro Max(440×956pt) 프레임, 폰 폭에서는 앱 화면만 꽉 차게.
+   디자인 시스템은 마냐나(딥그린·크림·테라코타·골드 클레이), 2D UI 구조는 뚜벅냥이(세그먼트·말풍선·FAB·탭바·여권)를 빌려옴 */
+:root{
+  --green:#1F5236; --green-2:#2E6B47; --green-deep:#143823; --sage:#A9C4A6;
+  --cream:#FBF5E9; --cream-2:#EFE5D2; --cream-3:#D9CBB0;
+  --terra:#B9432F; --terra-2:#CF5A40; --terra-pale:#F3D9CC; --gold:#C59A3E; --gold-2:#E9CF86; --gold-pale:#F6EBCB;
+  --ink:#1E2A22; --ink-2:#556358; --ink-3:#7C887F; --line:#E7DCC8;
+  --app:#F6F0E4; --card:#FFFCF5;
+  --stage:#163D28; --stage-2:#1D4A31;
+  --c-free:#C59A3E; --c-food:#B9432F; --c-rest:#2E6B47; --c-service:#5E7F6C;
+  --display:"Jua","Apple SD Gothic Neo",sans-serif;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  color-scheme:light;
+}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--stage);color:var(--ink);font-family:var(--body);overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,.in:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;gap:56px;padding:16px;
+  background:radial-gradient(120% 90% at 70% 20%,var(--stage-2),var(--stage))}
+.info{width:300px;color:var(--cream);display:none;flex-direction:column;gap:20px}
+@media (min-width:1000px){.info{display:flex}}
+.info .logo{font-family:var(--display);font-size:64px;line-height:1;color:var(--cream)}
+.info .logo small{display:block;font-size:19px;color:var(--gold-2);margin-top:8px}
+.info p{margin:0;font-size:15px;line-height:1.65;color:#D8E3D6;text-wrap:pretty}
+.info h3{margin:0 0 8px;font-size:12px;letter-spacing:.12em;color:var(--gold-2);font-weight:600}
+.legend{display:grid;gap:7px;font-size:14px}
+.legend span{display:flex;align-items:center;gap:10px}
+.legend i{width:14px;height:14px;border-radius:50%;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.keys{font-size:14px;line-height:1.7;color:#D8E3D6}
+.keys kbd{font-family:var(--body);font-size:12px;background:rgba(251,245,233,.12);border:1px solid rgba(251,245,233,.25);border-radius:6px;padding:1px 6px}
+.info .foot{font-size:12px;color:#9DB5A0;line-height:1.6}
+
+.phone-wrap{position:relative;flex:none}
+.phone{position:absolute;left:0;top:0;width:464px;height:980px;transform-origin:0 0;padding:12px;box-sizing:border-box;
+  border-radius:70px;background:linear-gradient(145deg,#3a3a36,#141412);box-shadow:0 30px 80px rgba(0,0,0,.45),inset 0 0 0 2px #55554f}
+.screen{position:relative;width:440px;height:956px;border-radius:58px;overflow:hidden;background:#E6EBDD;isolation:isolate;
+  user-select:none;-webkit-user-select:none}
+body.compact .stage{padding:0}
+body.compact .phone{padding:0;border-radius:0;background:none;box-shadow:none;width:440px;height:956px}
+body.compact .screen{border-radius:0}
+body.compact .sys,body.compact .island,body.compact .homebar{display:none}
+
+#map{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.layer{position:absolute;inset:0;pointer-events:none;z-index:1}
+.zl{position:absolute;left:0;top:0;white-space:nowrap;font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--cream);
+  background:rgba(20,56,35,.74);padding:3px 10px;border-radius:99px}
+.zl.exit{background:var(--terra)}
+
+/* 시설 말풍선 */
+.poi{position:absolute;left:0;top:0;border:0;background:none;padding:0;pointer-events:auto;display:block}
+.poi-in{display:flex;flex-direction:column;align-items:center;transform-origin:50% 100%}
+.poi-ic{display:block;width:62px;height:62px;filter:drop-shadow(0 4px 3px rgba(20,56,35,.25));position:relative;z-index:1}
+.poi-ic svg,.ic svg,.av svg,.np-ic svg,.t-ic svg,.ti svg{display:block;width:100%;height:100%}
+.poi-base{width:46px;height:14px;border-radius:50%;margin-top:-10px;background:var(--cream);box-shadow:0 3px 0 var(--green),0 6px 8px rgba(20,56,35,.25)}
+.poi-lb{margin-top:6px;font-size:12px;font-weight:700;padding:4px 10px;border-radius:99px;color:var(--cream);white-space:nowrap;
+  background:var(--c);box-shadow:0 2px 0 rgba(20,56,35,.35)}
+.poi[data-cat=free] .poi-lb{color:var(--ink)}
+.poi[data-cat=free],.tag.cat.free{--c:var(--c-free)} .poi[data-cat=food]{--c:var(--c-food)}
+.poi[data-cat=rest]{--c:var(--c-rest)} .poi[data-cat=service]{--c:var(--c-service)}
+.poi.far .poi-lb{opacity:0}
+.poi.target .poi-base{animation:ring 1.2s ease-out infinite}
+.pop{animation:pop .55s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes pop{0%{transform:scale(0) translateY(20px)}100%{transform:scale(1)}}
+@keyframes ring{0%{box-shadow:0 3px 0 var(--green),0 0 0 0 rgba(197,154,62,.8)}100%{box-shadow:0 3px 0 var(--green),0 0 0 18px rgba(197,154,62,0)}}
+
+/* 고양이 핀 */
+.cpin{position:absolute;left:0;top:0;border:0;padding:0;background:none;pointer-events:auto;display:block}
+.cpin .cp{display:flex;align-items:center;gap:6px;white-space:nowrap;border-radius:99px;padding:4px 12px 4px 4px;font-size:13px;font-weight:700;box-shadow:0 3px 0 rgba(20,56,35,.3)}
+.cpin .cp i{width:30px;height:30px;border-radius:50%;background:var(--cream);display:block;overflow:hidden}
+.cpin .cp i svg{display:block;width:100%;height:100%}
+.cpin.near .cp{background:linear-gradient(180deg,var(--terra-2),var(--terra));color:var(--cream);animation:bob 1s ease-in-out infinite}
+.cpin.friend .cp{background:var(--card);color:var(--ink)}
+.cpin.hint .cp{background:rgba(255,252,245,.9);color:var(--ink-2);padding:3px 10px 3px 3px;font-size:12px}
+.cpin.hint .cp i{filter:brightness(0) opacity(.3);width:24px;height:24px}
+@keyframes bob{50%{transform:translateY(-4px)}}
+
+/* system chrome */
+.sys{position:absolute;top:0;left:0;right:0;height:54px;display:flex;align-items:center;justify-content:space-between;padding:6px 34px 0 46px;
+  font-weight:600;font-size:17px;color:var(--ink);z-index:70;font-variant-numeric:tabular-nums;pointer-events:none}
+.sys svg{display:block}
+.island{position:absolute;top:11px;left:50%;width:126px;height:37px;margin-left:-63px;border-radius:20px;background:#000;z-index:71}
+.homebar{position:absolute;bottom:8px;left:50%;width:144px;height:5px;margin-left:-72px;border-radius:3px;background:rgba(30,42,34,.8);z-index:72;pointer-events:none}
+
+/* ---- 지도 HUD ---- */
+.top{position:absolute;top:58px;left:14px;right:14px;display:grid;gap:8px;z-index:10}
+.hdr{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.brand{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:99px;padding:4px 14px 4px 4px;box-shadow:0 3px 0 rgba(20,56,35,.22);min-width:0}
+.bunny-av{background:radial-gradient(circle at 50% 40%,#FFFBF2,var(--cream-2));background-size:cover;background-position:center 30%;border-radius:50%;flex:none}
+.brand .bunny-av{width:38px;height:38px;box-shadow:inset 0 0 0 2px var(--gold-2)}
+.brand b{font-family:var(--display);font-weight:400;font-size:21px;color:var(--green);line-height:1}
+.brand small{display:block;font-size:11.5px;color:var(--ink-2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
+.sosbtn{width:50px;height:50px;border-radius:50%;border:3px solid var(--gold-2);background:linear-gradient(180deg,var(--terra-2),var(--terra));
+  color:var(--cream);font-family:var(--display);font-size:17px;box-shadow:0 4px 0 #7E2A1C;flex:none}
+.sosbtn:active{transform:translateY(2px);box-shadow:0 2px 0 #7E2A1C}
+.seg{display:flex;background:var(--card);border-radius:16px;padding:5px;box-shadow:0 3px 0 rgba(20,56,35,.14),0 8px 20px rgba(20,56,35,.1)}
+.seg button{flex:1;border:0;background:none;min-height:40px;border-radius:12px;font-size:13.5px;font-weight:600;color:var(--ink-2)}
+.seg button.on{background:var(--terra);color:var(--cream)}
+.card{background:rgba(255,252,245,.96);border-radius:18px;box-shadow:0 3px 0 rgba(20,56,35,.18),0 8px 20px rgba(20,56,35,.1);border:1.5px solid rgba(31,82,54,.1)}
+.flight{display:flex;align-items:center;gap:10px;padding:8px 12px 8px 8px}
+.flight .ic{width:38px;height:38px;flex:none}
+.flight .fx{flex:1;min-width:0;line-height:1.3}
+.flight .fx b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.flight .fx small{font-size:12px;color:var(--ink-2)}
+.flight .left{text-align:right;flex:none;line-height:1.2}
+.flight .left small{display:block;font-size:11px;color:var(--ink-2)}
+.flight .left b{font-family:var(--display);font-weight:400;font-size:20px;color:var(--green);font-variant-numeric:tabular-nums}
+.flight.out{background:#FBE6DC;border-color:rgba(185,67,47,.35)}
+.flight.out .left b{color:var(--terra)}
+.navpill{display:flex;align-items:center;gap:10px;padding:8px}
+.navpill .np-ic{width:34px;height:34px;flex:none}
+.navpill .np-tx{flex:1;min-width:0;font-size:13px;line-height:1.3}
+.navpill .np-tx b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.navpill .np-tx span{font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.xbtn{width:44px;height:44px;border-radius:50%;border:0;background:var(--cream-2);display:grid;place-items:center;flex:none}
+
+.bub{position:absolute;left:14px;bottom:224px;max-width:318px;display:flex;gap:8px;align-items:flex-end;z-index:10;border:0;background:none;padding:0;text-align:left}
+.bub .bunny-av{width:52px;height:52px;box-shadow:0 3px 0 var(--green),0 0 0 3px var(--gold-2)}
+.bub .t{background:var(--green);color:var(--cream);padding:10px 14px;border-radius:16px 16px 16px 4px;font-size:14px;line-height:1.45;font-weight:500;box-shadow:0 3px 0 var(--green-deep)}
+.ctrl{position:absolute;left:14px;right:14px;bottom:100px;display:grid;grid-template-columns:1fr 112px 1fr;gap:8px;align-items:center;z-index:10}
+.fab{min-height:58px;border-radius:18px;border:0;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;gap:5px;padding:0 6px;line-height:1.2}
+.fab .ic{width:28px;height:28px;flex:none}
+.fab.a{background:var(--card);color:var(--terra);box-shadow:0 4px 0 var(--cream-3),0 10px 20px rgba(20,56,35,.16)}
+.fab.b{background:linear-gradient(180deg,var(--terra-2),var(--terra));color:var(--cream);box-shadow:0 4px 0 #7E2A1C,0 10px 20px rgba(20,56,35,.16)}
+.fab:active{transform:translateY(2px)}
+.joy{position:relative;width:112px;height:112px;border-radius:50%;touch-action:none;justify-self:center;
+  background:radial-gradient(circle at 50% 40%,rgba(251,245,233,.96),rgba(239,229,210,.94));
+  box-shadow:inset 0 0 0 4px var(--green),inset 0 0 0 7px var(--gold-2),0 5px 0 var(--green-deep),0 12px 24px rgba(20,56,35,.25)}
+.joy::before{content:"";position:absolute;inset:20px;border-radius:50%;border:2px dashed rgba(31,82,54,.25)}
+.knob{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;
+  background:radial-gradient(circle at 38% 32%,#E27258,var(--terra) 60%,#8E2F21);box-shadow:0 0 0 4px var(--gold-2),0 5px 0 #7E2A1C;pointer-events:none}
+
+.toast{position:absolute;left:50%;top:312px;transform:translateX(-50%) translateY(-8px);opacity:0;transition:opacity .25s,transform .25s;
+  display:flex;align-items:center;gap:8px;background:var(--green);color:var(--cream);padding:6px 16px 6px 6px;border-radius:99px;max-width:400px;
+  font-size:14px;font-weight:600;box-shadow:0 4px 0 var(--green-deep);z-index:60;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.toast .t-ic{width:36px;height:36px;flex:none}
+.toast span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.toast small{color:var(--gold-2);font-weight:700;margin-right:2px}
+
+/* 탭바 (뚜벅냥이 구조) */
+.tabs{position:absolute;left:0;right:0;bottom:0;height:88px;box-sizing:border-box;padding:8px 6px 30px;background:rgba(255,252,245,.98);
+  border-top:1px solid var(--line);display:flex;z-index:30;box-shadow:0 -6px 22px rgba(20,56,35,.07)}
+.tabs button{flex:1;border:0;background:none;font-size:11.5px;font-weight:700;color:var(--ink-3);display:flex;flex-direction:column;align-items:center;gap:2px;letter-spacing:.02em}
+.tabs .ti{width:30px;height:30px;filter:grayscale(1);opacity:.5;display:block}
+.tabs .ti.bunny-av{width:28px;height:28px;margin:1px}
+.tabs button.on{color:var(--terra)} .tabs button.on .ti{filter:none;opacity:1}
+
+/* 전체 화면 뷰 */
+.view{position:absolute;inset:0;background:var(--app);z-index:20;display:flex;flex-direction:column}
+.vtop{padding:62px 20px 10px;display:flex;align-items:center;gap:10px;background:var(--app);flex:none}
+.vtop h1{font-family:var(--display);font-weight:400;font-size:27px;flex:1;margin:0;line-height:1.15;min-width:0}
+.vtop .sub{display:block;font-size:12px;color:var(--terra);font-weight:700;letter-spacing:.08em;font-family:var(--body)}
+.vtop .lnk{border:0;background:none;color:var(--terra);font-weight:700;font-size:14px;min-height:44px}
+.back{width:44px;height:44px;border-radius:50%;border:0;background:var(--card);display:grid;place-items:center;box-shadow:0 2px 0 var(--cream-3);flex:none}
+.scroll{flex:1;overflow-y:auto;padding-bottom:120px;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.vcard{background:var(--card);border-radius:22px;padding:18px;margin:12px 16px 0;border:1px solid var(--line);box-shadow:0 3px 0 rgba(20,56,35,.05)}
+.lb{font-size:13px;color:var(--ink-2);font-weight:600;margin-bottom:8px}
+.lb em{font-style:normal;font-weight:400}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:40px;padding:8px 14px;border-radius:99px;background:var(--cream-2);font-size:14px;color:var(--ink-2);font-weight:500;border:0}
+.chip.on{background:var(--terra-pale);color:#8E2F21;font-weight:700}
+.chip.fixed{pointer-events:none}
+.in{width:100%;box-sizing:border-box;background:var(--cream-2);border:0;border-radius:12px;padding:13px 14px;font:inherit;font-size:16px;font-weight:600;color:var(--ink);user-select:text;-webkit-user-select:text}
+textarea.in{font-weight:400;line-height:1.5;resize:none;height:80px}
+.cta{position:absolute;left:0;right:0;bottom:0;padding:12px 20px 34px;background:var(--card);border-top:1px solid var(--line);z-index:2}
+.row{display:flex;gap:10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 16px 0}
+.gc{background:var(--card);border-radius:18px;padding:10px;text-align:left;border:1px solid var(--line);box-shadow:0 3px 0 rgba(20,56,35,.05);min-width:0}
+.gc .ph{height:118px;border-radius:12px;overflow:hidden;position:relative}
+.gc .ph svg{display:block}
+.gc .ph .catc{position:absolute;left:50%;bottom:-4px;width:96px;height:96px;margin-left:-48px}
+.gc b{display:block;margin-top:8px;font-size:15px}
+.gc small{font-size:12.5px;color:var(--ink-2)}
+.gc.unk .ph .catc{filter:brightness(0) opacity(.25)}
+.gc.unk b{color:var(--ink-3)}
+.seg2{display:flex;gap:4px;background:var(--cream-2);padding:4px;border-radius:14px;margin:4px 16px 0}
+.seg2 button{flex:1;border:0;background:none;min-height:40px;border-radius:10px;font-size:13.5px;font-weight:600;color:var(--ink-2)}
+.seg2 button.on{background:var(--card);color:var(--ink);box-shadow:0 2px 0 rgba(20,56,35,.08)}
+.stat{display:flex;gap:10px;margin:8px 16px 0}
+.stat div{flex:1;background:var(--card);border-radius:16px;padding:12px 14px;border:1px solid var(--line)}
+.stat small{font-size:12px;color:var(--ink-2)}
+.stat b{display:block;font-family:var(--display);font-weight:400;font-size:24px;margin-top:2px;color:var(--green);font-variant-numeric:tabular-nums}
+.day{font-size:13px;font-weight:700;color:var(--ink-2);margin:20px 20px 0}
+.ev{background:var(--card);border-radius:18px;padding:12px 14px;margin:8px 16px 0;display:flex;gap:12px;align-items:center;border:1px solid var(--line);width:calc(100% - 32px);box-sizing:border-box;text-align:left}
+.ev .av{width:46px;height:46px;flex:none;border-radius:14px;background:var(--cream-2);padding:3px;box-sizing:border-box}
+.ev b{font-size:15px;display:block}
+.ev small{display:block;font-size:12.5px;color:var(--ink-2);margin-top:2px;line-height:1.4}
+.ev time{margin-left:auto;font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums;flex:none}
+.empty{text-align:center;color:var(--ink-2);padding:50px 20px;font-size:14px;line-height:1.6}
+.warn{background:var(--gold-pale);color:#5E4512;border-radius:12px;padding:11px 13px;font-size:12.5px;line-height:1.55}
+.li{display:flex;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid var(--cream-2);width:100%;background:none;border-left:0;border-right:0;border-top:0;text-align:left}
+.li:last-child{border-bottom:0}
+.li .av{width:46px;height:46px;flex:none;border-radius:14px;background:var(--cream-2);padding:3px;box-sizing:border-box}
+.li .av.unk svg{filter:brightness(0) opacity(.28)}
+.li .tx{flex:1;min-width:0}
+.li b{font-size:15px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li small{display:block;font-size:12.5px;color:var(--ink-2);margin-top:2px}
+.go{border:0;border-radius:99px;background:var(--terra-pale);color:#8E2F21;font-weight:700;font-size:13px;min-height:40px;padding:0 14px;flex:none}
+.mis{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--cream-2)}
+.mis:last-child{border-bottom:0}
+.mis i{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--cream-2);flex:none;font-style:normal}
+.mis.done i{background:var(--green)}
+.mis b{flex:1;font-size:15px}
+.mis span{font-size:13px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+
+/* 고양이 여권 (뚜벅냥이 구조) */
+.pp{background:#FBF4E4;border-radius:22px;padding:20px;color:var(--ink);margin:12px 16px 0;box-shadow:0 8px 24px rgba(20,56,35,.1);border:1px solid var(--line)}
+.pp .hd{text-align:center;border-bottom:2px dashed var(--cream-3);padding-bottom:12px}
+.pp .hd small{font-size:11px;letter-spacing:3px;color:#7A6A44;font-weight:700}
+.pp .hd b{display:block;font-family:var(--display);font-weight:400;font-size:22px;letter-spacing:2px;margin-top:3px;color:var(--green)}
+.pp .bd{display:flex;gap:14px;margin-top:14px}
+.pho{width:112px;height:140px;border-radius:12px;overflow:hidden;flex:none;position:relative}
+.pho .catc{position:absolute;left:4px;right:4px;bottom:0}
+.pp .f small{display:block;font-size:11px;letter-spacing:1.2px;color:#6F6444;font-weight:700;margin-top:8px}
+.pp .f small:first-child{margin-top:0}
+.pp .f b{font-size:14.5px;word-break:keep-all}
+.stamps{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
+.stamps div{border:2px solid var(--terra);color:var(--terra);border-radius:8px;padding:5px 9px;font-size:12px;font-weight:800;transform:rotate(-3deg)}
+.stamps div:nth-child(2){border-color:var(--green-2);color:var(--green-2);transform:rotate(2deg)}
+.mrz{margin-top:12px;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#7A6A44;letter-spacing:1.1px;line-height:1.5;overflow:hidden;white-space:nowrap}
+
+/* 고양이 만남 화면 */
+.enc-bg{position:absolute;left:0;right:0;top:0;height:640px;overflow:hidden}
+.enc-bg svg{display:block}
+.enc-head{position:absolute;top:60px;left:16px;right:16px;display:flex;align-items:center;gap:10px;z-index:2}
+.enc-chip{background:rgba(255,252,245,.92);border-radius:99px;padding:8px 14px;font-size:12.5px;font-weight:700;color:var(--terra);letter-spacing:.04em}
+.enc-stage{position:absolute;left:50%;top:400px;width:0;height:0}
+.enc-target,.enc-ring{position:absolute;left:-105px;top:-105px;width:210px;height:210px;border-radius:50%;box-sizing:border-box}
+.enc-target{border:3px dashed var(--gold);background:rgba(251,245,233,.25)}
+.enc-ring{border:5px solid var(--terra);will-change:transform}
+.enc-cat{position:absolute;left:-95px;top:-118px;width:190px;height:190px;transition:transform .25s}
+.enc-cat.jump{transform:translateY(-14px) scale(1.04)}
+.enc-cat svg{display:block;width:100%;height:100%}
+.enc-card{position:absolute;left:0;right:0;bottom:0;background:var(--card);border-radius:28px 28px 0 0;padding:22px 22px 36px;box-shadow:0 -8px 24px rgba(20,56,35,.14);display:grid;gap:12px;z-index:2}
+.enc-title{display:flex;align-items:center;gap:10px}
+.enc-title b{font-family:var(--display);font-weight:400;font-size:26px;flex:1}
+.trust{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2)}
+.trust i{width:30px;height:30px;display:block}
+.trust i.off svg{filter:grayscale(1) opacity(.3)}
+.trust span{margin-left:auto;font-variant-numeric:tabular-nums}
+.enc-msg{margin:0;font-size:15px;line-height:1.55;min-height:46px}
+
+/* 시설 시트 (기존 마냐나) */
+.scrim{position:absolute;inset:0;background:rgba(20,40,28,.4);z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:80%;overflow:auto;background:var(--card);border-radius:30px 30px 0 0;
+  padding:10px 20px 44px;box-sizing:border-box;transform:translateY(105%);transition:transform .32s cubic-bezier(.2,.9,.3,1);z-index:41;
+  box-shadow:0 -6px 0 rgba(31,82,54,.1),0 -20px 40px rgba(20,56,35,.2)}
+.sheet.open{transform:none}
+.grab{width:44px;height:5px;border-radius:3px;background:var(--cream-3);margin:0 auto 14px}
+.sheet h3{font-family:var(--display);font-weight:400;font-size:22px;margin:0 0 4px}
+.sheet .shsub{font-size:13px;color:var(--ink-2);margin:0 0 8px}
+.sh-head{display:flex;align-items:center;gap:12px}
+.sh-head .ic{width:72px;height:72px;flex:none}
+.sh-head h2{margin:0;font-family:var(--display);font-weight:400;font-size:26px;line-height:1.15;color:var(--ink);text-wrap:balance}
+.sh-head p{margin:2px 0 0;font-size:13px;color:var(--ink-2);font-style:italic}
+.sh-head .xbtn{margin-left:auto;align-self:flex-start}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 12px}
+.tag{font-size:12px;font-weight:600;padding:4px 10px;border-radius:99px;background:var(--cream-2);color:var(--ink)}
+.tag.cat{background:var(--c);color:var(--cream)} .tag.cat.free{color:var(--ink)}
+.rows{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rows div{background:#fff;border:1.5px solid var(--cream-2);border-radius:14px;padding:8px 12px;min-width:0}
+.rows small{display:block;font-size:11.5px;color:var(--ink-2);margin-bottom:2px}
+.rows b{font-size:15px;font-variant-numeric:tabular-nums}
+.rows b.free{color:var(--green)}
+.rows em{display:block;font-style:normal;font-size:12px;color:var(--ink-2);margin-top:2px}
+.desc{font-size:14.5px;line-height:1.6;margin:12px 0;color:var(--ink);text-wrap:pretty}
+.law{background:var(--gold-pale);border-radius:14px;padding:10px 12px;font-size:12.5px;line-height:1.55;color:var(--ink);margin-bottom:12px}
+.law b{display:block;font-size:13px;margin-bottom:2px}
+.phrase{background:var(--green);color:var(--cream);border-radius:18px;padding:14px 16px;box-shadow:0 4px 0 var(--green-deep)}
+.phrase small{font-size:11.5px;letter-spacing:.08em;color:var(--gold-2);font-weight:600}
+.phrase .es{font-size:20px;font-weight:700;line-height:1.35;margin:6px 0 4px;user-select:text;-webkit-user-select:text}
+.phrase .ko{font-size:13.5px;color:#CFE0D0}
+.phrase .cp{margin-top:10px;border:0;border-radius:99px;background:rgba(251,245,233,.15);color:var(--cream);font-size:13px;font-weight:600;min-height:40px;padding:0 14px}
+.acts{display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-top:16px}
+.btn{border:0;border-radius:16px;padding:15px 12px;font-size:16px;font-weight:700;min-height:52px}
+.btn.full{width:100%}
+.btn.pri{background:linear-gradient(180deg,var(--terra-2),var(--terra));color:var(--cream);box-shadow:0 4px 0 #7E2A1C}
+.btn.sec{background:var(--cream-2);color:var(--ink);box-shadow:0 4px 0 var(--cream-3)}
+.btn.dis{opacity:.45;pointer-events:none}
+.btn:active{transform:translateY(2px)}
+.sos-list{display:grid;gap:10px;margin-top:14px}
+.sos-list .phrase .es{font-size:19px}
+
+@media (prefers-reduced-motion:reduce){.pop,.poi.target .poi-base,.cpin.near .cp{animation:none}.sheet,.toast,.scrim{transition:none}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="gG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3A7D55"/><stop offset="1" stop-color="#1D4D33"/></linearGradient>
+    <linearGradient id="gC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFBF2"/><stop offset="1" stop-color="#E6D9C0"/></linearGradient>
+    <linearGradient id="gT" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DA684C"/><stop offset="1" stop-color="#A2382A"/></linearGradient>
+    <linearGradient id="gO" x1="0" y1="0" x2=".35" y2="1"><stop offset="0" stop-color="#F6E09A"/><stop offset=".5" stop-color="#D2A949"/><stop offset="1" stop-color="#9E7629"/></linearGradient>
+    <linearGradient id="gY" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F5CB5C"/><stop offset="1" stop-color="#D8962A"/></linearGradient>
+    <linearGradient id="gS" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#CFE0CA"/><stop offset="1" stop-color="#8FB08E"/></linearGradient>
+    <radialGradient id="gHi" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff" stop-opacity=".6"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <filter id="fSh" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="2.5" stdDeviation="1.6" flood-color="#143823" flood-opacity=".3"/></filter>
+    <filter id="gw" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="3"/><feColorMatrix values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 2.4 -1.25"/></filter>
+    <filter id="gk" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".7" numOctaves="2" seed="8"/><feColorMatrix values="0 0 0 0 .08 0 0 0 0 .2 0 0 0 0 .14 0 0 0 2.4 -1.3"/></filter>
+  </defs>
+</svg>
+
+<div class="stage">
+  <aside class="info">
+    <div class="logo">마냐나<small>Mañana · 비행기는 내일, 오늘은 푹 쉬자</small></div>
+    <p>공항에서 오래 기다려야 할 때 공항 안 시설을 찾아주고, 시간이 남으면 공항 밖 동네로 나가 길고양이와 친구가 되는 앱이에요.</p>
+    <div><h3>시나리오</h3><p>서울에서 온 AM 0021이 4시간 40분 연착돼서 칸쿤행 환승편을 놓쳤어요. 다음 편은 내일 07:10, 지금은 12:30이에요.</p></div>
+    <div><h3>조작</h3><div class="keys">조이스틱을 끌거나 <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> · 방향키<br>출발 홀 남쪽 출구로 나가면 공항 밖 동네예요<br>고양이 앞에서 <kbd>만나기</kbd> → 눈 천천히 깜빡이기</div></div>
+    <div><h3>아이콘 색</h3><div class="legend">
+      <span><i style="background:var(--c-free)"></i>무료 (바우처·공항 무료 시설)</span>
+      <span><i style="background:var(--c-food)"></i>먹을 곳</span>
+      <span><i style="background:var(--c-rest)"></i>쉴 곳 · 씻을 곳</span>
+      <span><i style="background:var(--c-service)"></i>안내 · 환전 · 짐 · 택시</span>
+    </div></div>
+    <div class="foot">iPhone 18 Pro Max 기준 440×956pt 프로토타입 · 마냐나 × 뚜벅냥이<br>지도는 멕시코시티 공항과 주변 동네를 본뜬 가상 공간이고, 가격은 예시예요. 환율 예시 1 MXN ≈ 76원</div>
+  </aside>
+
+  <div class="phone-wrap" id="wrap">
+    <div class="phone" id="phone">
+      <div class="screen" id="screen">
+        <canvas id="map" aria-label="가상 3D 공항과 주변 동네 지도"></canvas>
+        <div class="layer" id="zones"></div>
+        <div class="layer" id="pois"></div>
+
+        <div class="sys"><span>12:30</span>
+          <svg width="78" height="14" viewBox="0 0 78 14" aria-hidden="true"><g fill="#1E2A22"><rect x="0" y="9" width="3.4" height="5" rx="1"/><rect x="5" y="6" width="3.4" height="8" rx="1"/><rect x="10" y="3" width="3.4" height="11" rx="1"/><rect x="15" y="0" width="3.4" height="14" rx="1"/><path d="M31 4.2a9 9 0 0 1 12 0l-1.6 1.7a6.6 6.6 0 0 0-8.8 0zM33.8 7.2a5 5 0 0 1 6.4 0L37 10.6z"/><rect x="50" y="1" width="24" height="12" rx="3.5" fill="none" stroke="#1E2A22" stroke-opacity=".45"/><rect x="52" y="3" width="15" height="8" rx="2"/><rect x="75" y="5" width="2" height="4" rx="1" opacity=".45"/></g></svg>
+        </div>
+        <div class="island"></div>
+
+        <div id="hud">
+          <div class="top">
+            <div class="hdr">
+              <div class="brand"><span class="bunny-av"></span><span><b>마냐나</b><small id="placeTx">멕시코시티 공항 · 출발 홀</small></span></div>
+              <button class="sosbtn" id="sosBtn" aria-label="스페인어 SOS 문장 보기">SOS</button>
+            </div>
+            <div class="seg" role="tablist" aria-label="지도에 보일 것">
+              <button class="on" data-layer="all">전체</button><button data-layer="fac">공항 시설</button><button data-layer="cat">고양이</button><button data-layer="paw">발자국</button>
+            </div>
+            <div class="card flight" id="flight">
+              <span class="ic" data-icon="ticket"></span>
+              <div class="fx"><b id="flTitle">칸쿤행 AM 0710 · 내일 07:10</b><small id="flSub">무료 식사·숙박 바우처 대상 · G23</small></div>
+              <div class="left"><small>탑승까지</small><b id="flLeft">18:40</b></div>
+            </div>
+            <div class="card navpill" id="navPill" hidden>
+              <span class="np-ic" data-icon="pin"></span>
+              <div class="np-tx"><b id="navName">-</b><span id="navDist">-</span></div>
+              <button class="xbtn" id="navX" aria-label="안내 끝내기"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 2l10 10M12 2L2 12" stroke="#1E2A22" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+            </div>
+          </div>
+          <button class="bub" id="bub" aria-label="마냐 말 바꾸기"><span class="bunny-av"></span><span class="t" id="bubT">조이스틱으로 걸어봐! 고양이는 공항 밖에 더 많아 깡총</span></button>
+          <div class="ctrl">
+            <button class="fab a" id="exploreBtn"><span class="ic" data-icon="paw"></span>킁킁!<br>주변 탐색</button>
+            <div class="joy" id="joy" role="application" aria-label="이동 조이스틱"><div class="knob" id="knob"></div></div>
+            <button class="fab b" id="meetBtn"><span class="ic" data-icon="cat"></span>고양이<br>만나기</button>
+          </div>
+        </div>
+
+        <section class="view" id="v-paw" hidden></section>
+        <section class="view" id="v-arc" hidden></section>
+        <section class="view" id="v-my" hidden></section>
+        <section class="view" id="v-enc" hidden></section>
+        <section class="view" id="v-reg" hidden></section>
+        <section class="view" id="v-cat" hidden></section>
+
+        <nav class="tabs" id="tabs">
+          <button class="on" data-tab="map"><span class="ti" data-icon="map"></span>MAP</button>
+          <button data-tab="paw"><span class="ti" data-icon="paw"></span>PAWPRINT</button>
+          <button data-tab="arc"><span class="ti" data-icon="passport"></span>CAT ARCHIVE</button>
+          <button data-tab="my"><span class="ti bunny-av"></span>MY</button>
+        </nav>
+
+        <div class="toast" id="toast"><span class="t-ic" id="toastIc"></span><span id="toastTx"></span></div>
+        <div class="scrim" id="scrim"></div>
+        <section class="sheet" id="sheet" aria-hidden="true"><div class="grab"></div><div id="sheetBody"></div></section>
+        <section class="sheet" id="sos" aria-hidden="true"><div class="grab"></div>
+          <div class="sh-head"><span class="ic" data-icon="ticket"></span><div><h2>스페인어 SOS</h2><p>화면을 그대로 보여주세요</p></div>
+            <button class="xbtn" data-close aria-label="닫기"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 2l10 10M12 2L2 12" stroke="#1E2A22" stroke-width="2.2" stroke-linecap="round"/></svg></button></div>
+          <div class="sos-list" id="sosList"></div>
+        </section>
+        <div class="homebar"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script id="bunny-glb" type="text/plain">__BUNNY_GLB__</script>
+<script>
+(function(){
+"use strict";
+const W=440,H=956,M=4,RATE=76,R=8,RC=5.5,SPEED=8;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- 아이콘: 마냐나 클레이 아이콘 시스템(딥그린·크림·테라코타·골드) ---------- */
+const PLANE='M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z';
+const ICONS={
+ticket:`<g filter="url(#fSh)" transform="rotate(-10 32 32)"><rect x="5" y="20" width="54" height="30" rx="5" fill="#CDBE9F"/><rect x="5" y="17" width="54" height="30" rx="5" fill="url(#gC)"/><path d="M5 22a5 5 0 0 1 5-5h44a5 5 0 0 1 5 5v2H5z" fill="url(#gG)"/><path d="M44 25v22" stroke="#C59A3E" stroke-width="1.3" stroke-dasharray="2.2 2"/><g fill="#1F5236"><rect x="47.5" y="28" width="1.6" height="14"/><rect x="50.5" y="28" width="2.6" height="14"/><rect x="54.2" y="28" width="1.2" height="14"/></g><path transform="translate(14 22) scale(1.1) rotate(45 12 12)" fill="#1F5236" d="${PLANE}"/></g>`,
+bed:`<g filter="url(#fSh)"><rect x="8" y="42" width="50" height="9" rx="3" fill="#143823"/><rect x="8" y="39" width="50" height="8" rx="3" fill="url(#gG)"/><rect x="8" y="13" width="13" height="33" rx="5" fill="url(#gG)" stroke="#C59A3E" stroke-width="1.6"/><rect x="18" y="29" width="40" height="12" rx="4" fill="url(#gC)"/><rect x="31" y="27" width="27" height="14" rx="4" fill="url(#gT)"/><path d="M31 33h27" stroke="#E9CF86" stroke-width="1.4"/><ellipse cx="25.5" cy="28.5" rx="6.5" ry="4.2" fill="#FFFBF2" stroke="#D9CBB0"/><rect x="11" y="47" width="4" height="8" rx="1.5" fill="url(#gO)"/><rect x="51" y="47" width="4" height="8" rx="1.5" fill="url(#gO)"/><path d="M50 6a8 8 0 1 0 8 10 6 6 0 1 1-8-10z" fill="url(#gO)"/></g>`,
+meal:`<g filter="url(#fSh)"><ellipse cx="32" cy="49" rx="27" ry="8.5" fill="#143823"/><ellipse cx="32" cy="47" rx="27" ry="8.5" fill="url(#gG)"/><ellipse cx="32" cy="46" rx="23" ry="6.3" fill="url(#gC)"/><path d="M11 45a21 21 0 0 1 42 0z" fill="url(#gO)"/><rect x="9" y="43.5" width="46" height="3.6" rx="1.8" fill="#9E7629"/><ellipse cx="24" cy="32" rx="7" ry="5" fill="url(#gHi)"/><circle cx="32" cy="22" r="3.8" fill="url(#gT)"/></g>`,
+taco:`<g filter="url(#fSh)"><ellipse cx="32" cy="50" rx="28" ry="9" fill="#143823"/><ellipse cx="32" cy="48" rx="28" ry="9" fill="url(#gG)"/><ellipse cx="32" cy="47" rx="24.5" ry="6.8" fill="url(#gC)"/><g fill="#7A3B22"><ellipse cx="16" cy="36" rx="4" ry="3"/><ellipse cx="24" cy="29" rx="4.5" ry="3"/><ellipse cx="33" cy="27" rx="4.5" ry="3"/><ellipse cx="42" cy="29" rx="4.5" ry="3"/><ellipse cx="48" cy="35" rx="3.6" ry="3"/></g><path d="M10 46A21.5 21 0 0 1 53 46Z" fill="url(#gY)"/><path d="M14 45A17.5 17 0 0 1 49 45" fill="none" stroke="#C98722" stroke-width="1.2" opacity=".6"/><circle cx="14.5" cy="34.5" r="3.4" fill="#3A7D55"/><rect x="18.5" y="26.5" width="5" height="5" rx="1" fill="#C9472F" transform="rotate(14 21 29)"/><circle cx="27" cy="24.5" r="3.6" fill="#3A7D55"/><rect x="31" y="20.5" width="4.5" height="4.5" rx="1" fill="#FFFBF2"/><rect x="37" y="21.5" width="5" height="5" rx="1" fill="#C9472F" transform="rotate(-10 39 24)"/><circle cx="45" cy="27" r="3.4" fill="#3A7D55"/><rect x="48" y="31.5" width="4.5" height="4.5" rx="1" fill="#C9472F"/><path d="M44 54a9 9 0 0 1 15-8z" fill="#5E9B3A"/><path d="M46.5 52.5a6 6 0 0 1 10-5.4z" fill="#C8E39A"/></g>`,
+bowl:`<g filter="url(#fSh)"><rect x="35" y="5" width="3" height="28" rx="1.5" fill="url(#gT)" transform="rotate(28 36.5 19)"/><rect x="41" y="7" width="3" height="27" rx="1.5" fill="url(#gT)" transform="rotate(40 42.5 20)"/><ellipse cx="32" cy="53" rx="10" ry="3" fill="#143823"/><path d="M9 31h46a23 21 0 0 1-46 0z" fill="url(#gG)"/><path d="M15 41q4 3 8 0t8 0 8 0 8 0" fill="none" stroke="#C59A3E" stroke-width="1.6"/><ellipse cx="32" cy="31" rx="23" ry="6.5" fill="url(#gO)"/><ellipse cx="32" cy="31" rx="20" ry="4.8" fill="#F3E3B8"/><path d="M17 31q3-3 6 0t6 0 6 0 6 0 6 0" fill="none" stroke="#DDB86A" stroke-width="1.5"/><circle cx="25" cy="30" r="2.2" fill="#3A7D55"/><ellipse cx="38" cy="30.5" rx="3" ry="1.6" fill="#C9472F"/></g>`,
+capsule:`<g filter="url(#fSh)"><rect x="6" y="47" width="52" height="7" rx="3" fill="url(#gG)"/><rect x="7" y="19" width="50" height="30" rx="15" fill="#CDBE9F"/><rect x="7" y="16" width="50" height="30" rx="15" fill="url(#gC)"/><rect x="36" y="16" width="5" height="30" fill="url(#gG)"/><circle cx="22" cy="31" r="10.5" fill="#143823" stroke="url(#gO)" stroke-width="3"/><ellipse cx="19" cy="33" rx="5" ry="2.6" fill="#FFFBF2"/><path d="M17 36h12a3 3 0 0 1-3 4h-7z" fill="url(#gT)"/><ellipse cx="47" cy="22" rx="7" ry="3" fill="url(#gHi)"/><circle cx="50" cy="31" r="2.2" fill="url(#gO)"/></g>`,
+chair:`<g filter="url(#fSh)"><rect x="13" y="50" width="3" height="6" fill="url(#gO)"/><rect x="40" y="50" width="3" height="6" fill="url(#gO)"/><rect x="10" y="47" width="36" height="5" rx="2" fill="url(#gO)"/><rect x="12" y="13" width="32" height="26" rx="9" fill="url(#gG)"/><rect x="12" y="34" width="32" height="14" rx="5" fill="#2E6B47"/><rect x="6" y="27" width="11" height="22" rx="5.5" fill="url(#gG)" stroke="#143823" stroke-width=".8"/><rect x="39" y="27" width="11" height="22" rx="5.5" fill="url(#gG)" stroke="#143823" stroke-width=".8"/><rect x="19" y="24" width="18" height="9" rx="4.5" fill="url(#gT)"/><ellipse cx="22" cy="18" rx="7" ry="3.5" fill="url(#gHi)"/><rect x="52.8" y="20" width="2.4" height="34" fill="url(#gO)"/><path d="M46.5 21a7.5 7 0 0 1 15 0z" fill="url(#gO)"/><rect x="47" y="41" width="14" height="3.5" rx="1.7" fill="url(#gC)"/></g>`,
+shower:`<g filter="url(#fSh)"><rect x="7" y="10" width="50" height="48" rx="10" fill="#143823"/><rect x="7" y="7" width="50" height="48" rx="10" fill="url(#gG)" stroke="url(#gO)" stroke-width="2.6"/><path d="M21 48V24a7 7 0 0 1 14 0v1" fill="none" stroke="#F6EEDD" stroke-width="4" stroke-linecap="round"/><path d="M28 27h14l-2.5 5h-9z" fill="url(#gO)"/><g fill="#C4D8BF"><ellipse cx="31" cy="37" rx="1.5" ry="2.4"/><ellipse cx="36" cy="39" rx="1.5" ry="2.4"/><ellipse cx="41" cy="37" rx="1.5" ry="2.4"/><ellipse cx="33" cy="45" rx="1.5" ry="2.4"/><ellipse cx="39" cy="46" rx="1.5" ry="2.4"/></g></g>`,
+charge:`<g filter="url(#fSh)"><ellipse cx="30" cy="54" rx="20" ry="5.5" fill="#143823"/><ellipse cx="30" cy="52" rx="20" ry="5.5" fill="url(#gG)"/><ellipse cx="30" cy="50.5" rx="17" ry="4.2" fill="url(#gO)"/><ellipse cx="30" cy="50" rx="15.5" ry="3.6" fill="url(#gC)"/><rect x="20" y="9" width="22" height="41" rx="7" fill="#CDBE9F"/><rect x="18" y="8" width="22" height="41" rx="7" fill="url(#gC)"/><rect x="21.5" y="13" width="15" height="24" rx="3.5" fill="url(#gG)"/><path d="M30.5 16l-5 9h4l-1.5 8 6-10h-4l2-7z" fill="url(#gO)"/><path d="M40 30c8 0 8-6 9-12" fill="none" stroke="#B9432F" stroke-width="2.6" stroke-linecap="round"/><rect x="45" y="10" width="8" height="8" rx="2" fill="url(#gT)"/><rect x="46.5" y="5.5" width="1.6" height="5" fill="url(#gO)"/><rect x="50" y="5.5" width="1.6" height="5" fill="url(#gO)"/></g>`,
+lounger:`<g filter="url(#fSh)"><rect x="6" y="48" width="52" height="7" rx="3.5" fill="url(#gG)"/><rect x="6" y="46" width="52" height="4" rx="2" fill="url(#gO)"/><rect x="18" y="41" width="2.6" height="6" fill="url(#gO)"/><rect x="48" y="41" width="2.6" height="6" fill="url(#gO)"/><path d="M9 41L17 21a3 3 0 0 1 5.4 1.2L18 40z" fill="url(#gG)"/><rect x="15" y="35" width="40" height="8" rx="4" fill="url(#gG)"/><rect x="22" y="32" width="31" height="5.5" rx="2.7" fill="url(#gC)"/><ellipse cx="18.5" cy="29" rx="3.6" ry="5.4" fill="url(#gT)" transform="rotate(22 18.5 29)"/><path d="M47 6a7.5 7.5 0 1 0 8 9.5 5.6 5.6 0 1 1-8-9.5z" fill="url(#gO)"/><path d="M33 10h6l-6 7h6" fill="none" stroke="#9E7629" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>`,
+money:`<g filter="url(#fSh)"><g transform="rotate(-12 28 28)"><rect x="5" y="17" width="40" height="24" rx="4" fill="#143823"/><rect x="5" y="14" width="40" height="24" rx="4" fill="url(#gG)" stroke="url(#gO)" stroke-width="1.6"/><ellipse cx="25" cy="26" rx="8" ry="7" fill="url(#gC)"/><path d="M25 20.5v11M28 23.2c-.6-1.2-1.7-1.7-3-1.7-1.7 0-2.9.9-2.9 2.2 0 3 6 1.6 6 4.6 0 1.4-1.3 2.3-3.1 2.3-1.4 0-2.6-.6-3.2-1.8" fill="none" stroke="#9E7629" stroke-width="1.6" stroke-linecap="round"/></g><path d="M34 50v3a12 4.5 0 0 0 24 0v-3z" fill="#9E7629"/><ellipse cx="46" cy="50" rx="12" ry="4.5" fill="url(#gO)"/><path d="M34 45.5v3a12 4.5 0 0 0 24 0v-3z" fill="#9E7629"/><ellipse cx="46" cy="45.5" rx="12" ry="4.5" fill="url(#gO)"/><path d="M34 41v3a12 4.5 0 0 0 24 0v-3z" fill="#9E7629"/><ellipse cx="46" cy="41" rx="12" ry="4.5" fill="url(#gO)"/><ellipse cx="46" cy="41" rx="8" ry="2.8" fill="none" stroke="#9E7629" stroke-width="1.1"/></g>`,
+suitcase:`<g filter="url(#fSh)"><ellipse cx="32" cy="51" rx="27" ry="8" fill="#143823"/><path d="M5 45v6a27 8 0 0 0 54 0v-6z" fill="url(#gG)"/><ellipse cx="32" cy="45" rx="27" ry="8" fill="url(#gC)"/><ellipse cx="32" cy="44.5" rx="23" ry="6.2" fill="#3B3A33"/><path d="M32 38.3v12.4M10 44.5h44M17 40.5l30 8M17 48.5l30-8" stroke="#56544A" stroke-width=".8"/><path d="M28 13V7h8v6" fill="none" stroke="#1F5236" stroke-width="2.4" stroke-linejoin="round"/><rect x="22" y="12" width="20" height="31" rx="4" fill="url(#gT)"/><path d="M27 15v25M32 15v25M37 15v25" stroke="#8E2F21" stroke-width="1.5"/><ellipse cx="26" cy="17" rx="3" ry="5" fill="url(#gHi)"/><circle cx="25.5" cy="44.5" r="2" fill="#1F5236"/><circle cx="38.5" cy="44.5" r="2" fill="#1F5236"/></g>`,
+taxi:`<g filter="url(#fSh)"><ellipse cx="32" cy="51" rx="27" ry="4" fill="#143823" opacity=".35"/><path d="M5 45v-8c0-3 2-5 5-5.5l7-1.5 6-8c1-1.3 2.3-2 4-2h12c1.7 0 3 .7 4 2l5 8 5 1c2.5.6 4 2.5 4 5v9z" fill="url(#gT)"/><rect x="5" y="38" width="53" height="4" fill="url(#gC)"/><path d="M19.5 30l5-6.6c.6-.8 1.4-1.2 2.4-1.2H31v7.8z" fill="url(#gS)"/><path d="M34 22.2h6.4c1 0 1.8.4 2.4 1.2l4.6 6.6H34z" fill="url(#gS)"/><rect x="25" y="12" width="14" height="6.5" rx="1.6" fill="url(#gG)" stroke="url(#gO)" stroke-width="1.3"/><circle cx="17" cy="45" r="6" fill="#1E2A22"/><circle cx="17" cy="45" r="2.6" fill="url(#gO)"/><circle cx="47" cy="45" r="6" fill="#1E2A22"/><circle cx="47" cy="45" r="2.6" fill="url(#gO)"/><circle cx="56" cy="35.5" r="1.7" fill="#F6E09A"/></g>`,
+bag:`<g filter="url(#fSh)"><path d="M44 20l10 4v30l-10 3z" fill="url(#gG)"/><rect x="10" y="20" width="34" height="37" rx="2" fill="url(#gC)"/><path d="M18 23v-5a9 9 0 0 1 18 0v5" fill="none" stroke="url(#gO)" stroke-width="2.6"/><circle cx="18" cy="24" r="1.8" fill="#9E7629"/><circle cx="36" cy="24" r="1.8" fill="#9E7629"/><g fill="url(#gG)"><path d="M27 50c-1.2-6-1.2-11 0-17 1.2 6 1.2 11 0 17z"/><path d="M27 50c-3-5-6-9-10-12 4 1 8 5 10 12z"/><path d="M27 50c3-5 6-9 10-12-4 1-8 5-10 12z"/><path d="M27 50c-5-3-9-5-14-5 5-1 10 1 14 5z"/><path d="M27 50c5-3 9-5 14-5-5-1-10 1-14 5z"/></g><path d="M27 49.5l2.4 2.6-2.4 2.6-2.4-2.6z" fill="url(#gT)"/></g>`,
+map:`<g filter="url(#fSh)"><path d="M6 21l16-6 20 6 16-6v36l-16 6-20-6-16 6z" fill="#143823"/><path d="M6 18l16-6 20 6 16-6v36l-16 6-20-6-16 6z" fill="url(#gC)" stroke="url(#gG)" stroke-width="2.4" stroke-linejoin="round"/><path d="M22 12v36M42 18v36" stroke="#D9CBB0" stroke-width="1.2"/><rect x="9" y="22" width="9" height="7" rx="1.5" fill="url(#gS)"/><rect x="26" y="30" width="12" height="8" rx="1.5" fill="url(#gS)"/><rect x="45" y="38" width="9" height="8" rx="1.5" fill="url(#gS)"/><path d="M12 43c6 0 8-10 15-8s9 2 14-7" fill="none" stroke="url(#gO)" stroke-width="2.4" stroke-linecap="round"/><path d="M44 8a6 6 0 0 1 6 6c0 4.5-6 10-6 10s-6-5.5-6-10a6 6 0 0 1 6-6z" fill="url(#gT)"/><circle cx="44" cy="14" r="2.3" fill="url(#gO)"/></g>`,
+pin:`<g filter="url(#fSh)"><ellipse cx="32" cy="54" rx="16" ry="5" fill="#143823"/><ellipse cx="32" cy="52" rx="16" ry="5" fill="url(#gG)"/><ellipse cx="32" cy="51" rx="11" ry="3.2" fill="url(#gC)"/><path d="M32 5a15 15 0 0 1 15 15c0 11-15 28-15 28S17 31 17 20A15 15 0 0 1 32 5z" fill="url(#gT)"/><circle cx="32" cy="20" r="6.5" fill="url(#gO)"/><ellipse cx="29.6" cy="17.6" rx="2.4" ry="1.6" fill="#fff" opacity=".55"/></g>`,
+paw:`<g filter="url(#fSh)"><path d="M32 30c8 0 15 8 15 15 0 5-4 8-8 8-3 0-4.5-1.5-7-1.5S28 53 25 53c-4 0-8-3-8-8 0-7 7-15 15-15z" fill="url(#gT)"/><ellipse cx="16" cy="31" rx="5.2" ry="6.8" transform="rotate(-25 16 31)" fill="url(#gT)"/><ellipse cx="25.5" cy="20" rx="5.4" ry="7" transform="rotate(-8 25.5 20)" fill="url(#gT)"/><ellipse cx="38.5" cy="20" rx="5.4" ry="7" transform="rotate(8 38.5 20)" fill="url(#gT)"/><ellipse cx="48" cy="31" rx="5.2" ry="6.8" transform="rotate(25 48 31)" fill="url(#gT)"/><ellipse cx="28" cy="38" rx="6" ry="3.5" fill="url(#gHi)"/></g>`,
+passport:`<g filter="url(#fSh)"><rect x="13" y="11" width="38" height="48" rx="5" fill="#143823"/><rect x="13" y="8" width="38" height="48" rx="5" fill="url(#gG)" stroke="url(#gO)" stroke-width="2"/><rect x="13" y="8" width="5" height="48" fill="#143823" opacity=".35"/><circle cx="34" cy="27" r="9.5" fill="none" stroke="url(#gO)" stroke-width="2.2"/><path d="M34 25.5c2.6 0 4.6 2.4 4.6 4.4 0 1.4-1.1 2.3-2.3 2.3-.9 0-1.4-.4-2.3-.4s-1.4.4-2.3.4c-1.2 0-2.3-.9-2.3-2.3 0-2 2-4.4 4.6-4.4z" fill="url(#gO)"/><circle cx="29.4" cy="22.6" r="1.5" fill="url(#gO)"/><circle cx="32.4" cy="20.6" r="1.5" fill="url(#gO)"/><circle cx="35.6" cy="20.6" r="1.5" fill="url(#gO)"/><circle cx="38.6" cy="22.6" r="1.5" fill="url(#gO)"/><rect x="24" y="42" width="20" height="2.4" rx="1.2" fill="url(#gO)"/><rect x="27" y="47" width="14" height="2.4" rx="1.2" fill="url(#gO)" opacity=".7"/></g>`,
+cat:`<g filter="url(#fSh)"><path d="M13 30L15 8l17 12z" fill="url(#gT)"/><path d="M51 30L49 8 32 20z" fill="url(#gT)"/><circle cx="32" cy="36" r="21" fill="url(#gC)"/><path d="M17 24l1.4-10 8 6z" fill="#E9A28A"/><path d="M47 24l-1.4-10-8 6z" fill="#E9A28A"/><ellipse cx="24" cy="35" rx="3" ry="4" fill="#1E2A22"/><ellipse cx="40" cy="35" rx="3" ry="4" fill="#1E2A22"/><circle cx="25" cy="33.6" r="1" fill="#fff"/><circle cx="41" cy="33.6" r="1" fill="#fff"/><path d="M30 42h4l-2 2.4z" fill="#B9432F"/><path d="M28 46q2 2 4 0q2 2 4 0" fill="none" stroke="#1E2A22" stroke-width="1.4" stroke-linecap="round"/><path d="M8 40h11M9 45l10-2M56 40H45M55 45l-10-2" stroke="#1F5236" stroke-width="1.3" stroke-linecap="round"/><ellipse cx="25" cy="25" rx="7" ry="4" fill="url(#gHi)"/></g>`,
+heart:`<g filter="url(#fSh)"><path d="M32 54S9 40 9 24a11 11 0 0 1 23-5 11 11 0 0 1 23 5c0 16-23 30-23 30z" fill="url(#gT)" stroke="url(#gO)" stroke-width="2.4" stroke-linejoin="round"/><ellipse cx="21" cy="24" rx="5" ry="3.5" fill="url(#gHi)"/></g>`
+};
+const svg=k=>`<svg viewBox="0 0 64 64" aria-hidden="true">${ICONS[k]}</svg>`;
+const fillIcons=root=>root.querySelectorAll('[data-icon]').forEach(el=>{if(!el.firstChild)el.innerHTML=svg(el.dataset.icon)});
+fillIcons(document);
+
+/* ---------- 2D 고양이 (같은 클레이 스타일) ---------- */
+const COAT={
+ 치즈:{b:'#E9A25A',l:'#F8DDB6',w:'#7A4A22',ie:'#E9A28A',m:'#1E2A22',x:`<path d="M50 31q10 5 20 0M48 38q12 5 24 0" stroke="#C97F3A" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M38 82q5 6 0 13M82 82q-5 6 0 13" stroke="#C97F3A" stroke-width="3.2" fill="none" stroke-linecap="round"/>`},
+ 고등어:{b:'#9EA59E',l:'#E6E7DF',w:'#3B403C',ie:'#D9A08E',m:'#1E2A22',x:`<path d="M50 31q10 5 20 0M48 38q12 5 24 0M60 28v12" stroke="#5E655F" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M38 82q5 6 0 13M82 82q-5 6 0 13M48 76q2 6 0 12M72 76q-2 6 0 12" stroke="#5E655F" stroke-width="3.2" fill="none" stroke-linecap="round"/>`},
+ 검정:{b:'#34302D',l:'#4A4440',w:'#C9C2B6',ie:'#7A5A52',m:'#C9C2B6',x:''},
+ 삼색:{b:'#FBF5E9',l:'#FFFFFF',w:'#7A6A5A',ie:'#E9A28A',m:'#1E2A22',x:`<ellipse cx="44" cy="42" rx="13" ry="11" fill="#E09A52"/><ellipse cx="77" cy="40" rx="10" ry="9" fill="#34302D"/><ellipse cx="76" cy="88" rx="12" ry="9" fill="#E09A52"/><ellipse cx="44" cy="96" rx="9" ry="7" fill="#34302D"/>`},
+ 흰색:{b:'#F7F2E6',l:'#FFFFFF',w:'#9C9282',ie:'#E9A28A',m:'#1E2A22',x:''}
+};
+function catSVG(coat,mood){const C=COAT[coat]||COAT.치즈;mood=mood||'calm';
+ let eyes;
+ if(mood==='happy') eyes=`<path d="M42 56q6-7 12 0M66 56q6-7 12 0" stroke="${C.m}" stroke-width="3.2" fill="none" stroke-linecap="round"/>`;
+ else if(mood==='blink') eyes=`<path d="M42 55q6 3 12 0M66 55q6 3 12 0" stroke="${C.m}" stroke-width="3.2" fill="none" stroke-linecap="round"/>`;
+ else {const s=mood==='away'?5:0;eyes=`<circle cx="48" cy="54" r="7" fill="#C59A3E"/><circle cx="72" cy="54" r="7" fill="#C59A3E"/><ellipse cx="${48+s}" cy="54" rx="2.6" ry="5.6" fill="#1E2A22"/><ellipse cx="${72+s}" cy="54" rx="2.6" ry="5.6" fill="#1E2A22"/><circle cx="46" cy="51" r="1.8" fill="#fff"/><circle cx="70" cy="51" r="1.8" fill="#fff"/>`;}
+ return `<svg viewBox="0 0 120 120" aria-hidden="true"><ellipse cx="60" cy="112" rx="36" ry="5" fill="#143823" opacity=".18"/>
+ <path d="M86 100c18-2 24-20 15-34" fill="none" stroke="${C.b}" stroke-width="9" stroke-linecap="round"/>
+ <ellipse cx="60" cy="90" rx="30" ry="22" fill="${C.b}"/><ellipse cx="60" cy="94" rx="15" ry="13" fill="${C.l}"/>
+ <ellipse cx="46" cy="108" rx="8.5" ry="5" fill="${C.b}"/><ellipse cx="74" cy="108" rx="8.5" ry="5" fill="${C.b}"/>
+ <path d="M33 46L35 15l25 18z" fill="${C.b}"/><path d="M87 46L85 15 60 33z" fill="${C.b}"/>
+ <ellipse cx="60" cy="56" rx="30" ry="27" fill="${C.b}"/>
+ <path d="M38 38l1.6-15 11 10z" fill="${C.ie}"/><path d="M82 38l-1.6-15-11 10z" fill="${C.ie}"/>
+ ${C.x}<ellipse cx="60" cy="67" rx="11" ry="8" fill="${C.l}"/>${eyes}
+ <path d="M56.5 62h7l-3.5 4z" fill="#C9705A"/><path d="M55 69q2.5 2.5 5 0q2.5 2.5 5 0" fill="none" stroke="${C.m}" stroke-width="1.6" stroke-linecap="round"/>
+ <path d="M20 62h17M22 70l15-3M100 62H83M98 70l-15-3" stroke="${C.w}" stroke-width="1.5" stroke-linecap="round"/>
+ <ellipse cx="47" cy="40" rx="10" ry="5" fill="#fff" opacity=".22"/></svg>`;}
+
+/* ---------- 멕시코 장면 일러스트 (뚜벅냥이 장면 문법 + 마냐나 팔레트) ---------- */
+const TH={
+ '공항 안':{en:'AEROPUERTO',sky:['#D9E3D6','#FBF5E9'],h:['#E6D9C0','#B5CDB0','#5E8F6A','#1F5236'],sun:'#FFF3D6',m:'plane',pp:0},
+ '공항 출구 앞':{en:'SALIDA',sky:['#E9CF86','#FBF5E9'],h:['#CFE0CA','#A9C4A6','#5E8F6A','#1F5236'],sun:'#FFF3D6',m:'plane',pp:1},
+ '타코 골목':{en:'CALLE DE LOS TACOS',sky:['#E8A88E','#FBEBDD'],h:['#F0C9A0','#D98F6C','#8FA77A','#2E6B47'],sun:'#FFE2B8',m:'stall',pp:1},
+ '분수 광장':{en:'PLAZUELA',sky:['#CFE0D6','#FBF5E9'],h:['#E6D9C0','#C9B48A','#7F9F7A','#2E6B47'],sun:'#FFF3D6',m:'fountain',pp:1},
+ '작은 공원':{en:'PARQUE',sky:['#BFD6C4','#F3EFDF'],h:['#B5CDB0','#7FA889','#4F8466','#1F5236'],sun:'#FFF6D8',m:'tree',pp:0},
+ '동네 시장':{en:'MERCADO',sky:['#F2C9A8','#FBF0E2'],h:['#EBC49A','#C97A5A','#8FA77A','#3A6B4A'],sun:'#FFD9A8',m:'market',pp:1}
+};
+const th=n=>TH[n]||TH['공항 출구 앞'];
+let SID=0;
+function rng(s){let a=0;for(const ch of s)a=(a*31+ch.charCodeAt(0))>>>0;return()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
+function scene(n,Wd,Ht,o={}){const T=th(n),r=rng(n),u='sc'+(++SID),f=v=>v.toFixed(1),k=Ht/150,ys=[.5,.6,.72,.85].map(q=>Ht*q),D=T.h[3];
+ const wave=(y,a)=>{let d=`M0 ${f(y)}`;for(let i=0;i<3;i++){const x0=Wd*i/3,w=Wd/3,j=(r()-.5)*2*a;d+=` C${f(x0+w*.35)} ${f(y-a-j)} ${f(x0+w*.65)} ${f(y+a+j)} ${f(x0+w)} ${f(y)}`}return d+` V${Ht} H0Z`};
+ const band=(y,x1,h)=>`M0 ${f(y)} H${f(x1)} C${f(x1+Wd*.12)} ${f(y)} ${f(x1+Wd*.1)} ${f(y-h)} ${f(x1+Wd*.22)} ${f(y-h)} H${Wd} V${Ht} H0Z`;
+ const cloud=(x,y,w,h)=>`<path d="M${f(x)} ${f(y)} C${f(x+w*.1)} ${f(y-h*.9)} ${f(x+w*.3)} ${f(y-h*.9)} ${f(x+w*.4)} ${f(y-h*.4)} C${f(x+w*.5)} ${f(y-h*1.2)} ${f(x+w*.8)} ${f(y-h*.9)} ${f(x+w)} ${f(y)}Z" fill="#fff" opacity=".9"/>`;
+ const mx=Wd*(.3+r()*.15);let m='';
+ if(T.m==='plane')m=`<path transform="translate(-16 -44) scale(1.4) rotate(35 12 12)" d="${PLANE}"/>`;
+ else if(T.m==='stall')m=`<rect x="-16" y="-14" width="32" height="14"/><path d="M-19 -14h38l-4-8h-30z"/><rect x="26" y="-10" width="18" height="10"/><path d="M24 -10h22l-3-6h-16z"/>`;
+ else if(T.m==='tree')m=`<rect x="-1.6" y="-14" width="3.2" height="14"/><circle cx="0" cy="-21" r="9"/><circle cx="-7" cy="-15" r="6"/><circle cx="7" cy="-15" r="6"/><rect x="30" y="-9" width="2.4" height="9"/><circle cx="31" cy="-13" r="6"/>`;
+ else if(T.m==='fountain')m=`<rect x="-15" y="-5" width="30" height="5"/><rect x="-2" y="-16" width="4" height="11"/><ellipse cx="0" cy="-16" rx="10" ry="2.8"/><rect x="-1" y="-24" width="2" height="8"/><circle cx="0" cy="-25" r="2.4"/>`;
+ else if(T.m==='market')m=`<rect x="-22" y="-16" width="44" height="16"/><path d="M-25 -16h50l-4-7h-42z"/><rect x="-4" y="-10" width="8" height="10" fill="#FBF5E9" opacity=".6"/>`;
+ let s=`<svg width="${Wd}" height="${Ht}" viewBox="0 0 ${Wd} ${Ht}" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="${u}s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${T.sky[0]}"/><stop offset="1" stop-color="${T.sky[1]}"/></linearGradient><radialGradient id="${u}o"><stop offset=".3" stop-color="#fff"/><stop offset="1" stop-color="${T.sun}"/></radialGradient></defs>
+ <rect width="${Wd}" height="${Ht}" fill="url(#${u}s)"/><circle cx="${f(Wd*(.78+r()*.12))}" cy="${f(Ht*.34)}" r="${f(Ht*.09)}" fill="url(#${u}o)" opacity=".95"/>${cloud(Wd*.04,Ht*.2,Wd*.34,Ht*.1)}${cloud(Wd*.62,Ht*.15,Wd*.3,Ht*.08)}`;
+ if(T.pp){const n2=Math.max(6,Math.round(Wd/42)),y0=Ht*.08,dd=Ht*.07,cols=['#C59A3E','#B9432F','#2E6B47','#FBF5E9','#CF5A40'];
+  s+=`<path d="M0 ${f(y0)} Q${f(Wd/2)} ${f(y0+2*dd)} ${Wd} ${f(y0)}" stroke="#1F5236" stroke-width="1.2" fill="none" opacity=".55"/>`;
+  for(let i=0;i<n2;i++){const t=(i+.5)/n2,x=Wd*t,y=y0+2*dd*t*(1-t),w=Wd/n2*.72,h=Ht*.075,q=w/4;
+   s+=`<path d="M${f(x-w/2)} ${f(y)} h${f(w)} v${f(h)} l${f(-q)} ${f(-h*.18)} l${f(-q)} ${f(h*.18)} l${f(-q)} ${f(-h*.18)} l${f(-q)} ${f(h*.18)}z" fill="${cols[i%5]}" opacity=".92"/><circle cx="${f(x)}" cy="${f(y+h*.45)}" r="${f(Math.min(w,h)*.16)}" fill="#fff" opacity=".45"/>`;}}
+ s+=`<path d="${wave(ys[0],Ht*.05)}" fill="${T.h[0]}"/><path d="${band(ys[1],Wd*(.55+r()*.2),Ht*.06)}" fill="${T.h[1]}"/>
+ <g transform="translate(${f(mx)} ${f(ys[1])}) scale(${f(k)})" fill="${D}" opacity=".85">${m}</g>
+ <path d="${band(ys[2],Wd*(.55+r()*.2),-Ht*.05)}" fill="${T.h[2]}"/>`;
+ if(o.cat!==false) s+=`<g transform="translate(${f(Wd*.2)} ${f(ys[2])}) scale(${f(k*1.1)})" fill="#1F2D26" opacity=".8"><ellipse cx="0" cy="-7" rx="6" ry="8"/><circle cx="0" cy="-18" r="5"/><polygon points="-5,-21 -4,-27 -1,-22"/><polygon points="5,-21 4,-27 1,-22"/><path d="M5 -3Q16 -4 14 -16" fill="none" stroke="#1F2D26" stroke-width="2.5" stroke-linecap="round"/></g>`;
+ s+=`<path d="${wave(ys[3],Ht*.03)}" fill="${D}"/><rect width="${Wd}" height="${Ht}" filter="url(#gw)" opacity=".38"/><rect width="${Wd}" height="${Ht}" filter="url(#gk)" opacity=".1"/>`;
+ if(o.title) s+=`<text x="${Wd/2}" y="${f(Ht*(o.ty||.4))}" text-anchor="middle" fill="#1F5236" fill-opacity=".85" font-size="${f(Math.max(12,Ht*(o.fs||.085)))}" letter-spacing="5" font-weight="600" font-family="IBM Plex Sans KR,sans-serif">${T.en}</text>`;
+ return s+'</svg>';}
+
+/* ---------- 시설 데이터 (가상 공항 · 가격은 예시) ---------- */
+const VOUCHER_NOTE='멕시코 민간항공법(Ley de Aviación Civil) 47조의2에 따라 항공사 사유로 4시간 넘게 지연되면 항공사가 식사와 숙박을 제공해야 해요. 환승 데스크에서 받은 바우처를 보여주세요.';
+const POIS=[
+ {id:'desk',cat:'service',icon:'ticket',label:'환승 데스크',name:'항공사 환승 데스크',es:'Mostrador de Conexiones',x:-6,z:18,hours:'24시간',free:true,voucher:true,
+  desc:'연착 확인서와 식사·호텔 바우처를 여기서 받아요. 무료 숙박과 무료 식사는 이 바우처로 이용해요.',
+  ph:['Perdí mi conexión por el retraso. ¿Me pueden dar vales de comida y de hotel?','연착 때문에 환승편을 놓쳤어요. 식사와 호텔 바우처를 받을 수 있나요?']},
+ {id:'hotel',cat:'free',icon:'bed',label:'무료 숙박',name:'무료 숙박 · 연결 호텔',es:'Hotel Puente T1',x:-38,z:20,hours:'24시간 체크인',free:true,voucher:true,alt:3400,
+  desc:'출발 홀 서쪽 연결통로로 걸어서 3분. 공항 밖으로 나가지 않아도 돼요. 바우처를 내면 1박과 아침 식사가 무료예요.',
+  ph:['Tengo un vale de la aerolínea. ¿Puedo registrarme ahora?','항공사 바우처가 있어요. 지금 체크인할 수 있나요?']},
+ {id:'meal',cat:'free',icon:'meal',label:'무료 식사',name:'무료 식사 · 바우처 식당',es:'Comedor La Espera',x:2,z:-6,hours:'05:00–24:00',free:true,voucher:true,alt:250,
+  desc:'바우처 한 장에 MXN 250까지 무료예요. 수프, 메인, 음료 세트를 고르면 한도 안에 들어와요.',
+  ph:['¿Aceptan este vale de comida?','이 식사 바우처 받나요?']},
+ {id:'taco',cat:'food',icon:'taco',label:'멕시칸 맛집',name:'멕시칸 맛집 · 타케리아',es:'Taquería El Chilango',x:-16,z:0,hours:'24시간',mxn:135,unit:'알 파스토르 타코 3개',
+  desc:'보안검색 안쪽에서 줄이 제일 긴 집. 파인애플을 올린 알 파스토르 타코가 대표 메뉴예요. 살사는 따로 달라고 하면 맵기를 조절할 수 있어요.',
+  ph:['Tres tacos al pastor, por favor. La salsa aparte.','알 파스토르 타코 세 개 주세요. 살사는 따로요.']},
+ {id:'chinese',cat:'food',icon:'bowl',label:'중식 맛집',name:'중식 맛집 · 금룡',es:'Dragón Dorado 金龍',x:-23,z:-8,hours:'06:00–01:00',mxn:189,unit:'볶음밥',
+  desc:'멕시코 음식이 물릴 때 가는 곳. 볶음밥과 마파두부 덮밥이 한국 사람 입맛에 잘 맞아요. 새벽 1시에 닫아요.',
+  ph:['Un arroz frito, por favor. ¿Pica mucho?','볶음밥 하나 주세요. 많이 매워요?']},
+ {id:'capsule',cat:'rest',icon:'capsule',label:'캡슐 호텔',name:'캡슐 호텔',es:'Siesta Cápsula',x:23,z:-8,hours:'24시간',mxn:650,unit:'4시간',
+  desc:'보안검색 안쪽이라 짐 검사를 다시 받지 않아도 돼요. 호텔 바우처가 없을 때 가장 싼 잠자리예요. 침구와 충전 포트 포함.',
+  ph:['¿Tienen una cápsula libre por cuatro horas?','4시간 쓸 캡슐 있나요?']},
+ {id:'lounge',cat:'rest',icon:'chair',label:'유료 라운지',name:'유료 라운지',es:'Salón Mariachi',x:14,z:-9,hours:'05:00–01:00',mxn:950,unit:'1회 입장',
+  desc:'뷔페, 음료, 샤워실, 조용한 좌석. 카드사 라운지 혜택이 되는지 입구에서 먼저 물어보세요.',
+  ph:['¿Puedo pagar la entrada aquí?','여기서 입장료를 낼 수 있나요?']},
+ {id:'shower',cat:'rest',icon:'shower',label:'샤워실',name:'샤워실',es:'Regaderas',x:20,z:2.5,hours:'24시간',mxn:350,unit:'30분 · 수건 포함',
+  desc:'멕시코에서는 샤워기를 레가데라라고 해요. 장거리 비행 뒤에 씻고 자면 훨씬 개운해요.',
+  ph:['¿Hay una regadera libre ahora?','지금 비어 있는 샤워실 있나요?']},
+ {id:'charge',cat:'free',icon:'charge',label:'무료 충전',name:'무료 충전 구역',es:'Zona de Carga',x:8,z:1,hours:'24시간',free:true,
+  desc:'USB-A·USB-C 포트가 있는 충전 테이블. 멕시코 콘센트는 납작한 11자 모양(A타입)이라 한국 플러그가 안 맞아요. USB 케이블을 챙기세요.',
+  ph:['¿Dónde puedo cargar mi celular?','휴대폰은 어디서 충전할 수 있나요?']},
+ {id:'sleep',cat:'free',icon:'lounger',label:'무료 수면 의자',name:'무료 수면 의자',es:'Zona de Descanso',x:0,z:-33,hours:'24시간',free:true,
+  desc:'탑승동 끝, 조명을 낮춘 구역에 누울 수 있는 의자 24석. 내일 탑승구 G23과 가까워서 알람만 맞추면 돼요.',
+  ph:['¿Se puede dormir aquí hasta mañana?','여기서 내일까지 자도 되나요?']},
+ {id:'store',cat:'food',icon:'bag',label:'24시 편의점',name:'24시 편의점·약국',es:'Tienda y Farmacia',x:-2.5,z:-14,hours:'24시간',mxn:18,unit:'생수 1병',
+  desc:'생수, 칫솔, 충전기, 상비약을 팔아요. 수돗물은 마시지 말고 생수를 사세요.',
+  ph:['¿Tienen agua y un cargador USB-C?','생수랑 USB-C 충전기 있나요?']},
+ {id:'exchange',cat:'service',icon:'money',label:'환전소',name:'환전소',es:'Casa de Cambio',x:-15,z:24,hours:'24시간',priceText:'시내보다 3–5% 불리',
+  desc:'공항 환율은 시내보다 나빠요. 오늘 쓸 만큼, MXN 500 정도만 바꾸세요. 카드는 대부분의 매장에서 돼요.',
+  ph:['Quiero cambiar cien dólares a pesos.','100달러를 페소로 바꾸고 싶어요.']},
+ {id:'luggage',cat:'service',icon:'suitcase',label:'짐 보관',name:'짐 보관소',es:'Guarda Equipaje',x:13,z:22,hours:'24시간',mxn:200,unit:'24시간 · 1개',
+  desc:'큰 캐리어를 맡기고 가볍게 움직이세요. 공항 밖 동네에 나가기 전에 맡기면 편해요. 맡길 때 여권을 보여줘야 해요.',
+  ph:['Quiero dejar mi maleta hasta mañana.','내일까지 캐리어를 맡기고 싶어요.']},
+ {id:'taxi',cat:'service',icon:'taxi',label:'공인 택시',name:'공인 택시 부스',es:'Taxi Autorizado',x:22,z:27,hours:'24시간',priceText:'목적지별 선불 요금',
+  desc:'공항 밖으로 멀리 나가야 하면 이 부스에서 선불권을 사세요. 출구에서 말을 거는 기사는 따라가지 마세요.',
+  ph:['Un taxi autorizado a este hotel, por favor. ¿Cuánto cuesta?','이 호텔까지 공인 택시 부탁해요. 얼마예요?']}
+];
+const CAT_L={free:'무료',food:'먹을 곳',rest:'쉴 곳',service:'안내·서비스'};
+const SOS=[
+ ['No hablo español. ¿Habla inglés?','스페인어를 못해요. 영어 하세요?'],
+ ['Perdí mi vuelo. ¿Qué puedo hacer?','비행기를 놓쳤어요. 어떻게 하면 되나요?'],
+ ['¿Dónde está el baño?','화장실이 어디예요?'],
+ ['Necesito ayuda, por favor.','도와주세요.']
+];
+
+/* ---------- 고양이 데이터 (뚜벅냥이 수집 구조 · 멕시코 동네) ---------- */
+const CATS=[
+ {id:'k1',sug:'보딩',coat:'흰색',pers:'도도함',x:20,z:17.5,place:'공항 안',hint:'출발 홀 체크인 카운터 근처'},
+ {id:'k2',sug:'추로',coat:'치즈',pers:'애교쟁이',x:16,z:31.8,place:'공항 출구 앞',hint:'공항 출구 바로 앞 인도'},
+ {id:'k3',sug:'과카',coat:'고등어',pers:'호기심쟁이',x:-22,z:50,place:'타코 골목',hint:'타코 골목 노점 사이'},
+ {id:'k4',sug:'몰레',coat:'삼색',pers:'도도함',x:5,z:56,place:'분수 광장',hint:'분수 광장 가장자리'},
+ {id:'k5',sug:'루나',coat:'검정',pers:'겁쟁이',x:26,z:58,place:'작은 공원',hint:'작은 공원 나무 그늘'},
+ {id:'k6',sug:'피냐',coat:'치즈',pers:'호기심쟁이',x:-7,z:61.5,place:'동네 시장',hint:'동네 시장 입구'},
+ {id:'k7',sug:'타말',coat:'고등어',pers:'겁쟁이',x:30,z:45.5,place:'작은 공원',hint:'공원 입구 벤치 옆'}
+];
+const PERS=['애교쟁이','도도함','겁쟁이','호기심쟁이'];
+const RELS=['천천히 눈을 깜빡여 줬어요','먼저 다가왔어요','옆에 앉아서 쉬었어요','배를 보여주며 누웠어요','멀리서 눈만 마주쳤어요'];
+const LINES={
+ in:['탑승까지 18시간 넘게 남았어! 공항 밖 고양이 보러 갈래? 깡총','출구는 출발 홀 남쪽, 택시 부스 옆이야','큰 짐은 짐 보관소에 맡기고 나가자'],
+ near:['저기 고양이가 있어! 살금살금 다가가 보자','고양이한테는 눈을 천천히 깜빡이는 게 인사래'],
+ out:['해 지기 전, 19:00까지는 공항으로 돌아가자','길 건널 땐 횡단보도로! 깡총']
+};
+const TYPE_LINES={모험:'골목 끝이 궁금해! 끝까지 가보자 깡총',식도락:'타코 골목에서 알 파스토르 냄새가 나… 킁킁',느긋:'분수 광장에서 잠깐 쉬어가자~',역사:'멕시코시티는 옛 아즈텍 호수 위에 세운 도시래'};
+
+/* ---------- 저장 (이 브라우저에만) ---------- */
+const KEY='manana-v2';
+function seed(){return{found:[],friends:{},events:[],walked:0,trail:[],wentOut:false,my:{name:'마냐',type:'모험'}}}
+let DB=null;try{DB=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
+if(!DB||!DB.my)DB=seed();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}}
+const now2=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return{full:`${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())}`,t:`${p(d.getHours())}:${p(d.getMinutes())}`}};
+function logEv(k,txt,sub,ref){DB.events.unshift({k,txt,sub,ref,t:now2().t,d:now2().full});if(DB.events.length>80)DB.events.pop();save();}
+
+/* ---------- 화면 맞춤 ---------- */
+const phone=$('phone'),wrap=$('wrap');
+let S=1;
+function fit(){const vw=innerWidth,vh=innerHeight,compact=vw<=500;
+ document.body.classList.toggle('compact',compact);
+ const pw=compact?440:464,ph=compact?956:980,aw=compact?vw:vw-32-(vw>=1000?356:0),ah=compact?vh:vh-32;
+ S=compact?Math.min(aw/pw,ah/ph):Math.min(1,aw/pw,ah/ph);
+ phone.style.transform=`scale(${S})`;wrap.style.width=pw*S+'px';wrap.style.height=ph*S+'px';}
+addEventListener('resize',fit);fit();
+
+/* ---------- 걷는 영역 · 장애물 · 길 연결 ---------- */
+const WALK=[
+ {x1:-43,x2:-28,z1:18.6,z2:21.4},    // 0 호텔 연결통로
+ {x1:-29.4,x2:29.4,z1:10.6,z2:29.4}, // 1 출발 홀
+ {x1:-3.4,x2:3.4,z1:5,z2:11.5},      // 2 보안검색
+ {x1:-29.4,x2:29.4,z1:-11.4,z2:5.4}, // 3 에어사이드
+ {x1:-5.4,x2:5.4,z1:-39.4,z2:-10.8}, // 4 탑승동
+ {x1:6.6,x2:11.4,z1:28.5,z2:31.6},   // 5 출구
+ {x1:-35,x2:35,z1:30.6,z2:63.5}      // 6 공항 밖 동네
+];
+const ZONE=['호텔 연결통로','보안검색 전 · 출발 홀','보안검색대','보안검색 후 · 에어사이드','보안검색 후 · 탑승동','공항 출구','공항 밖'];
+const EDGES=[[0,1,{x:-29,z:20}],[1,2,{x:0,z:10.4}],[2,3,{x:0,z:5.6}],[3,4,{x:0,z:-11.6}],[1,5,{x:9,z:29}],[5,6,{x:9,z:31.4}]];
+const OBST=[
+ {x1:-26,x2:-12,z1:12.6,z2:14.4},{x1:12,x2:26,z1:12.6,z2:14.4},
+ {x1:23,x2:28.6,z1:3.2,z2:5.4},{x1:25.4,x2:29.4,z1:-11.4,z2:-4.6},
+ {x1:-4.8,x2:-3.4,z1:-30,z2:-16},{x1:3.4,x2:4.8,z1:-30,z2:-16},
+ {x1:17.6,x2:20.4,z1:34.3,z2:35.7},{x1:22.6,x2:25.4,z1:34.3,z2:35.7},{x1:-13.4,x2:-10.6,z1:37.9,z2:39.3},
+ {x1:-2.8,x2:2.8,z1:49.2,z2:54.8},
+ {x1:-30,x2:-26,z1:45.5,z2:48.5},{x1:-30,x2:-26,z1:52.5,z2:55.5},{x1:-30,x2:-26,z1:59.5,z2:62.5},
+ {x1:-18,x2:-14,z1:48,z2:51},{x1:-18,x2:-14,z1:56,z2:59},
+ {x1:17.4,x2:18.6,z1:47.4,z2:48.6},{x1:30.4,x2:31.6,z1:50.4,z2:51.6},{x1:19.4,x2:20.6,z1:60.4,z2:61.6},{x1:31.4,x2:32.6,z1:59.4,z2:60.6},{x1:24.4,x2:25.6,z1:52.4,z2:53.6}
+];
+const inR=(r,x,z,p=0)=>x>=r.x1-p&&x<=r.x2+p&&z>=r.z1-p&&z<=r.z2+p;
+const walkable=(x,z)=>WALK.some(r=>inR(r,x,z))&&!OBST.some(o=>inR(o,x,z,.5));
+function regionOf(x,z){for(const i of [2,5,4,0,1,3,6]) if(inR(WALK[i],x,z,.6)) return i; return 1;}
+const OUT=[{n:'공항 출구 앞',x:9,z:34},{n:'타코 골목',x:-22,z:54},{n:'분수 광장',x:0,z:52},{n:'작은 공원',x:24,z:54},{n:'동네 시장',x:0,z:62}];
+const isOut=(x,z)=>z>30.4;
+function placeName(x,z){if(isOut(x,z))return '공항 밖 · '+OUT.reduce((b,o)=>Math.hypot(o.x-x,o.z-z)<Math.hypot(b.x-x,b.z-z)?o:b).n;return '멕시코시티 공항 · '+ZONE[regionOf(x,z)].replace(/^보안검색 [전후] · /,'');}
+const ADJ={};EDGES.forEach(([a,b,g])=>{(ADJ[a]=ADJ[a]||[]).push([b,g]);(ADJ[b]=ADJ[b]||[]).push([a,g]);});
+function gatesBetween(ra,rb){if(ra===rb)return[];const prev={[ra]:null},q=[ra];
+ while(q.length){const u=q.shift();if(u===rb)break;for(const [v,g] of ADJ[u]||[]) if(!(v in prev)){prev[v]={u,g};q.push(v);}}
+ const out=[];let v=rb;while(prev[v]){out.unshift(prev[v].g);v=prev[v].u;}return out;}
+
+/* ---------- 3D ---------- */
+const screenEl=$('screen');
+if(!window.THREE){screenEl.insertAdjacentHTML('beforeend','<div style="position:absolute;inset:40% 24px auto;text-align:center;font-weight:600">3D 지도를 불러오지 못했어요. 새로고침해 주세요.</div>');return;}
+const canvas=$('map');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
+renderer.setSize(W,H,false);
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene3=new THREE.Scene();
+const SKY=0xE6EBDD;
+scene3.background=new THREE.Color(SKY);
+scene3.fog=new THREE.Fog(SKY,55,125);
+const camera=new THREE.PerspectiveCamera(58,W/H,.5,260);
+scene3.add(new THREE.HemisphereLight(0xFFFBF0,0xB9AE8E,.78));
+const sun=new THREE.DirectionalLight(0xFFF4DE,.72);
+sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-40,right:40,top:40,bottom:-40,near:1,far:120});
+sun.shadow.bias=-.0006;
+scene3.add(sun,sun.target);
+
+const mats={};
+const mat=(c,o)=>{const k=c+(o?JSON.stringify(o):'');return mats[k]||(mats[k]=new THREE.MeshLambertMaterial(Object.assign({color:c},o||{})));};
+function box(w,h,d,c,x,y,z,o={}){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),o.mat||mat(c));m.position.set(x,y,z);m.castShadow=o.cast!==false;m.receiveShadow=true;(o.parent||scene3).add(m);return m;}
+function cyl(rt,rb,h,c,x,y,z,o={}){const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,o.seg||20),o.mat||mat(c));m.position.set(x,y,z);m.castShadow=o.cast!==false;m.receiveShadow=true;(o.parent||scene3).add(m);return m;}
+function tileTex(base,line,px=64){const c=document.createElement('canvas');c.width=c.height=px;const g=c.getContext('2d');g.fillStyle=base;g.fillRect(0,0,px,px);g.strokeStyle=line;g.lineWidth=2;g.strokeRect(1,1,px-2,px-2);const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;return t;}
+function plane(x1,z1,x2,z2,c,y=.02,tex){const w=x2-x1,d=z2-z1;let m;if(tex){const t=tex.clone();t.needsUpdate=true;t.repeat.set(w/3,d/3);m=new THREE.MeshLambertMaterial({map:t});}else m=mat(c);const p=new THREE.Mesh(new THREE.PlaneGeometry(w,d),m);p.rotation.x=-Math.PI/2;p.position.set((x1+x2)/2,y,(z1+z2)/2);p.receiveShadow=true;scene3.add(p);return p;}
+function disc(x,z,r,c,y=.03){const p=new THREE.Mesh(new THREE.CircleGeometry(r,40),mat(c));p.rotation.x=-Math.PI/2;p.position.set(x,y,z);p.receiveShadow=true;scene3.add(p);return p;}
+
+// 바깥 지면
+plane(-220,-220,220,220,0xB7CDA6,-.05);
+plane(-80,-75,80,30,0xCBCDC1,-.03);
+for(const z of [-20,-34]){plane(7,z-.15,34,z+.15,0xD9B14F,-.02);plane(-34,z-.15,-7,z+.15,0xD9B14F,-.02);}
+plane(-80,-56,80,-55.7,0xD9B14F,-.02);
+plane(-80,30,80,33,0xE2D8C4,-.02);
+plane(-80,33,80,41,0x6E7268,-.02);
+for(let x=-76;x<80;x+=6) if(x+3<5||x>13) plane(x,36.85,x+3,37.15,0xFBF5E9,-.01);
+for(let z=33.4;z<40.8;z+=1.1) plane(6.4,z,11.6,z+.55,0xFBF5E9,-.012); // 횡단보도
+plane(-80,41,80,43,0xE2D8C4,-.02);
+
+// 공항 바닥
+const floorTex=tileTex('#F7F0E2','#E9DECA'),airTex=tileTex('#F1ECDD','#DFE6D6'),townTex=tileTex('#EBE0CB','#DDD0B6');
+plane(-30,10,30,30,0,.01,floorTex);
+plane(-30,-12,30,6,0,.01,airTex);
+plane(-6,-40,6,-12,0,.01,airTex);
+plane(-4,6,4,10,0xE9E1CC,.01);
+plane(-44,18,-30,22,0,.01,floorTex);
+plane(6,29.5,12,30.6,0xF7F0E2,.012);
+plane(-.35,-39.5,.35,29.5,0xA9C4A6,.025);
+plane(8.65,26,9.35,33,0xC59A3E,.026);
+plane(-14,-11,-4,-1,0xEFE3C8,.02);
+plane(10,-11.5,29.5,-4.5,0xE4EADB,.02);
+
+// 벽: 딥그린 + 골드 띠
+function wall(x1,z1,x2,z2,h=1.4,color=0x1F5236){const len=Math.hypot(x2-x1,z2-z1),a=-Math.atan2(z2-z1,x2-x1);
+ const w=box(len+.5,h,.5,color,(x1+x2)/2,h/2,(z1+z2)/2);w.rotation.y=a;
+ const t=box(len+.5,.12,.56,0xC59A3E,(x1+x2)/2,h+.06,(z1+z2)/2,{cast:false});t.rotation.y=a;}
+[[-30,10,-4,10],[4,10,30,10],[-30,30,6,30],[12,30,30,30],[-30,10,-30,18],[-30,22,-30,30],[30,10,30,30],
+ [-4,6,-4,10],[4,6,4,10],
+ [-30,6,-4,6],[4,6,30,6],[-30,-12,-6,-12],[6,-12,30,-12],[-30,-12,-30,6],[30,-12,30,6],
+ [-6,-12,-6,-40],[6,-12,6,-40],[-6,-40,6,-40]].forEach(s=>wall(...s));
+const glass=new THREE.MeshLambertMaterial({color:0xCFE0D6,transparent:true,opacity:.55});
+[[-44,18,-30,18],[-44,22,-30,22]].forEach(([x1,z1,x2])=>box(x2-x1,1.2,.25,0,(x1+x2)/2,.6,z1,{mat:glass,cast:false}));
+// 출구 문
+box(.4,3.4,.6,0x1F5236,6,1.7,30);box(.4,3.4,.6,0x1F5236,12,1.7,30);box(6.4,.5,.7,0xC59A3E,9,3.45,30);
+
+// 체크인 카운터
+for(const [a,b] of [[-26,-12],[12,26]]){box(b-a,1,1.6,0xF2E8D4,(a+b)/2,.5,13.5);box(b-a,.12,1.7,0x1F5236,(a+b)/2,1.06,13.5,{cast:false});
+ for(let x=a+1.5;x<b;x+=3.5){box(.12,2.4,.12,0x1F5236,x,1.2,12.8);box(1.6,.6,.12,0x1F5236,x,2.6,12.8);}}
+for(const x of [-1.8,1.8]){box(.22,2.4,.4,0x5E7F6C,x-.8,1.2,8);box(.22,2.4,.4,0x5E7F6C,x+.8,1.2,8);box(1.82,.3,.5,0x5E7F6C,x,2.45,8);}
+box(.5,.8,3,0xF2E8D4,0,.4,8);
+function makeSign(w,h,draw){const c=document.createElement('canvas');c.width=w;c.height=h;const t=new THREE.CanvasTexture(c);const run=()=>{draw(c.getContext('2d'),w,h);t.needsUpdate=true;};run();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(run);return t;}
+const boardTex=makeSign(512,160,(g,w,h)=>{g.fillStyle='#143823';g.fillRect(0,0,w,h);g.fillStyle='#E9CF86';g.font='700 26px "IBM Plex Sans KR",sans-serif';g.fillText('SALIDAS  출발',18,34);
+ g.font='600 22px "IBM Plex Sans KR",monospace';g.fillStyle='#FBF5E9';g.fillText('AM0710  CANCÚN    07:10  G23',18,80);g.fillStyle='#E27258';g.fillText('AM0021  SEÚL      DEMORADO',18,122);});
+const board=new THREE.Mesh(new THREE.PlaneGeometry(7.6,2.4),new THREE.MeshBasicMaterial({map:boardTex}));board.position.set(0,3.6,10.3);scene3.add(board);
+box(.3,4.8,.3,0x1F5236,-4,2.4,10.3);box(.3,4.8,.3,0x1F5236,4,2.4,10.3);
+for(const [x,z] of [[-12,-4],[-8,-8],[-19,-4.5],[-6,-2.5],[-11,-9.5],[5,-9],[-2,-9.5]]){cyl(.8,.8,.12,0xF2E8D4,x,.8,z);cyl(.1,.1,.8,0xC59A3E,x,.4,z);
+ for(const a of [0,Math.PI]){box(.5,.5,.5,0x2E6B47,x+Math.cos(a)*1.2,.25,z+Math.sin(a)*1.2,{cast:false});}}
+for(let i=0;i<3;i++) box(1.7,2.2,2,0xCFE0D6,23.9+i*1.9,1.1,4.3);
+for(let i=0;i<3;i++)for(let j=0;j<2;j++){const c=cyl(.9,.9,3.6,0xF7F0E2,27.4,1+j*1.9,-10+i*2.4,{seg:18});c.rotation.x=Math.PI/2;c.rotation.z=Math.PI/2;cyl(.62,.62,.05,0x1F5236,25.58,1+j*1.9,-10+i*2.4).rotation.z=Math.PI/2;}
+for(const [x,z] of [[11,-10],[15,-6],[18,-10.4]]){box(2.4,.6,1,0x2E6B47,x,.3,z);box(2.4,.8,.3,0x2E6B47,x,.7,z-.5);box(.8,.25,.6,0xB9432F,x,.72,z);}
+for(const sx of [-4.1,4.1]) for(let z=-17;z>-30;z-=1.1){box(1,.5,.9,0x2E6B47,sx,.25,z);box(.2,.6,.9,0x2E6B47,sx+(sx<0?-.45:.45),.6,z);}
+for(let i=0;i<4;i++){box(1,.35,2.2,0xF2E8D4,-3.6+i*2.4,.35,-37);box(1,.18,.9,0x2E6B47,-3.6+i*2.4,.62,-37.6).rotation.x=-.4;}
+function cactus(x,z){cyl(.5,.4,.6,0xB9432F,x,.3,z);const g=0x3A7D55;cyl(.28,.32,2,g,x,1.5,z);cyl(.16,.16,.7,g,x+.4,1.6,z).rotation.z=-.9;cyl(.15,.15,.6,g,x+.62,2,z);cyl(.16,.16,.6,g,x-.38,1.3,z).rotation.z=.9;cyl(.14,.14,.5,g,x-.58,1.65,z);}
+[[-28,28.4],[28,28.4],[-28,-10.4],[28,-1],[-4.6,-38.6],[4.6,-38.6],[-28,12],[8,12],[4.6,31.6],[13.4,31.6]].forEach(p=>cactus(...p));
+// 호텔
+box(10,9,18,0xB9432F,-49,4.5,20);
+for(let y=2;y<9;y+=2.2) for(let z=12.5;z<28;z+=2.6) box(.1,1.2,1.4,0xF7F0E2,-43.95,y,z,{cast:false});
+for(let y=2;y<9;y+=2.2) for(let x=-53;x<-45;x+=2.6) box(1.4,1.2,.1,0xF7F0E2,x,y,29.05,{cast:false});
+box(10.4,.4,18.4,0xC59A3E,-49,9.2,20);
+const hotelTex=makeSign(512,128,(g,w,h)=>{g.fillStyle='#1F5236';g.fillRect(0,0,w,h);g.strokeStyle='#C59A3E';g.lineWidth=8;g.strokeRect(6,6,w-12,h-12);g.fillStyle='#E9CF86';g.font='700 54px "IBM Plex Sans KR",sans-serif';g.textAlign='center';g.fillText('HOTEL PUENTE',w/2,84);});
+const hs=new THREE.Mesh(new THREE.PlaneGeometry(8,2),new THREE.MeshBasicMaterial({map:hotelTex}));hs.position.set(-49,10.6,29.3);scene3.add(hs);
+// 비행기
+function airplane(x,z,flip){const g=new THREE.Group();const cream=0xF3ECDD;
+ const f=cyl(1.15,1.15,11,cream,0,0,0,{parent:g});f.rotation.z=Math.PI/2;
+ const n=new THREE.Mesh(new THREE.SphereGeometry(1.15,20,14),mat(cream));n.scale.set(1.7,1,1);n.position.x=5.5;n.castShadow=true;g.add(n);
+ const tl=cyl(.3,1.15,3,cream,-7,0.2,0,{parent:g});tl.rotation.z=-Math.PI/2;
+ box(3,.22,14,cream,.3,-.35,0,{parent:g});
+ box(2,2.6,.25,0x1F5236,-7.4,1.7,0,{parent:g});box(1.6,.2,5,0x1F5236,-7.6,.4,0,{parent:g});
+ box(3,.1,.3,0x1F5236,4.6,.55,0,{parent:g});
+ for(const s of [-3.4,3.4]){const e=cyl(.55,.55,1.8,0xB9432F,.9,-.9,s,{parent:g});e.rotation.z=Math.PI/2;cyl(.6,.6,.25,0xC59A3E,1.85,-.9,s,{parent:g}).rotation.z=Math.PI/2;}
+ g.position.set(x,1.9,z);g.rotation.y=flip?Math.PI:0;scene3.add(g);}
+airplane(17,-20,true);airplane(17,-34,true);airplane(-17,-20,false);airplane(-17,-34,false);
+for(const z of [-20,-34]){box(4,1.3,1.6,0xF2E8D4,8.2,2.2,z);box(4,1.3,1.6,0xF2E8D4,-8.2,2.2,z);}
+function palm(x,z){const t=cyl(.22,.3,4.6,0x9C6B3F,x,2.3,z);t.rotation.z=.08;for(let i=0;i<7;i++){const l=box(3,.08,.7,0x3A7D55,x+.2,4.6,z);l.rotation.y=i*Math.PI*2/7;l.rotation.z=-.35;l.geometry.translate(1.4,0,0);}}
+for(const x of [-54,-42,-30,30,42,54]) palm(x,42);
+function taxi(x,z){box(2.6,.7,1.3,0xB9432F,x,.55,z);box(1.5,.55,1.2,0xF7F0E2,x-.1,1.15,z);box(.6,.2,.4,0x1F5236,x-.1,1.55,z);
+ for(const dx of [-.8,.8])for(const dz of [-.62,.62]){cyl(.28,.28,.2,0x1E2A22,x+dx,.28,z+dz).rotation.x=Math.PI/2;}}
+taxi(19,35);taxi(24,35);taxi(-12,38.6);
+
+// ---- 공항 밖 동네 ----
+plane(-36,43,36,70,0,.0,townTex);
+disc(0,52,9.5,0xEFE5D2,.012);disc(0,52,9.5*.96,0xF6EEDD,.013);
+cyl(2.6,2.8,.7,0xF2E8D4,0,.35,52);cyl(2.2,2.2,.1,0x8FB8B0,0,.72,52,{cast:false});cyl(.35,.45,1.6,0xF2E8D4,0,1.2,52);cyl(1.1,.6,.3,0xC59A3E,0,2,52);cyl(.18,.18,.6,0xF2E8D4,0,2.4,52);
+plane(14,44,34,63,0xA9C4A6,.011);
+function tree(x,z,c=0x3A7D55){cyl(.25,.32,2.2,0x9C6B3F,x,1.1,z);const s=new THREE.Mesh(new THREE.SphereGeometry(1.6,14,10),mat(c));s.position.set(x,3,z);s.castShadow=true;scene3.add(s);const s2=new THREE.Mesh(new THREE.SphereGeometry(1.1,12,8),mat(c));s2.position.set(x+.9,2.5,z+.4);s2.castShadow=true;scene3.add(s2);}
+tree(18,48);tree(31,51,0xD9B14F);tree(20,61);tree(32,60);tree(25,53,0x5E8F6A);
+for(const [x,z,r] of [[22,56,0],[28,48,Math.PI/2]]){const b=box(2.4,.15,.7,0xC59A3E,x,.6,z);b.rotation.y=r;const bb=box(2.4,.6,.12,0x1F5236,x,.95,z-.3);bb.rotation.y=r;}
+// 타코 골목 노점
+const AW=[0xB9432F,0x2E6B47,0xC59A3E];
+function stall(x,z,i,face){box(3.6,1.1,2.4,0xF2E8D4,x,.55,z);box(3.6,.1,2.6,0x1F5236,x,1.15,z);
+ for(let k=0;k<4;k++){const a=box(.9,.12,3,k%2?0xFBF5E9:AW[i%3],x-1.35+k*.9,2.6,z+face*.3,{cast:false});a.rotation.x=face*.3;}
+ box(.12,2.6,.12,0x5E7F6C,x-1.7,1.3,z+face*1.1);box(.12,2.6,.12,0x5E7F6C,x+1.7,1.3,z+face*1.1);}
+stall(-28,47,0,1);stall(-28,54,1,1);stall(-28,61,2,1);stall(-16,49.5,1,-1);stall(-16,57.5,0,-1);
+// 파펠 피카도
+const PP=[0xC59A3E,0xB9432F,0x2E6B47,0xFBF5E9,0xCF5A40];
+for(const z of [45.5,52,58.5]) for(let i=0;i<9;i++){const x=-29.5+i*1.6;const f=new THREE.Mesh(new THREE.PlaneGeometry(1,.8),new THREE.MeshLambertMaterial({color:PP[i%5],side:THREE.DoubleSide}));f.position.set(x,3.9-Math.sin(i/8*Math.PI)*.4,z);scene3.add(f);}
+// 시장
+box(28,4.6,7,0xB9432F,0,2.3,68);box(28.4,.4,7.4,0xC59A3E,0,4.8,68);
+for(let i=0;i<7;i++){const a=box(3.6,.12,2,i%2?0xFBF5E9:0x2E6B47,-11+i*3.66,3.2,64.2,{cast:false});a.rotation.x=.3;}
+for(let i=0;i<4;i++) box(2.2,2.4,.1,0x143823,-9+i*6,1.2,64.45,{cast:false});
+const mkTex=makeSign(512,110,(g,w,h)=>{g.fillStyle='#1F5236';g.fillRect(0,0,w,h);g.strokeStyle='#C59A3E';g.lineWidth=8;g.strokeRect(6,6,w-12,h-12);g.fillStyle='#E9CF86';g.font='700 52px "IBM Plex Sans KR",sans-serif';g.textAlign='center';g.fillText('MERCADO',w/2,74);});
+const mk=new THREE.Mesh(new THREE.PlaneGeometry(9,1.9),new THREE.MeshBasicMaterial({map:mkTex}));mk.position.set(0,5.9,64.4);scene3.add(mk);
+// 동네 집 (가장자리)
+const HC=[0xF2E8D4,0xB9432F,0xD9B14F,0xA9C4A6,0x2E6B47,0xE9A28A];
+let hc=0;for(let z=45;z<=69;z+=6){for(const x of [-39.5,39.5]){const c=HC[(hc++)%HC.length],h=3+((hc*7)%3);box(6,h,5.6,c,x,h/2,z);box(6.2,.3,5.8,0xF7F0E2,x,h+.15,z);for(const dz of [-1.4,1.4])box(.1,1,1,0xF7F0E2,x+(x<0?3.02:-3.02),h*.6,z+dz,{cast:false});}}
+for(const x of [-26,-18,18,26]) {const c=HC[(hc++)%HC.length];box(7,3.6,5,c,x,1.8,73.5);}
+// 버스 정류장
+box(3.2,.1,1.4,0x1F5236,-20,2.5,42.2);box(.12,2.5,.12,0x1F5236,-21.4,1.25,42.6);box(.12,2.5,.12,0x1F5236,-18.6,1.25,42.6);box(2.8,.4,.5,0xC59A3E,-20,.5,42.6);
+
+// ---- 캐릭터: 팀 블렌더 모델(멕시코 토끼) ----
+const hero=new THREE.Group(),body=new THREE.Group();hero.add(body);
+const shadow=new THREE.Mesh(new THREE.CircleGeometry(1.5,28),new THREE.MeshBasicMaterial({color:0x143823,transparent:true,opacity:.22}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.04;hero.add(shadow);
+const temp=new THREE.Group();body.add(temp);
+cyl(.42,.5,.85,0xB9432F,0,.92,0,{parent:temp});
+const head=new THREE.Mesh(new THREE.SphereGeometry(.44,20,16),mat(0xE9B98F));head.position.y=1.66;head.castShadow=true;temp.add(head);
+cyl(.9,.9,.07,0xD9B14F,0,2.02,0,{parent:temp,seg:28});cyl(.3,.38,.44,0xD9B14F,0,2.26,0,{parent:temp});
+temp.scale.setScalar(1.6);
+let feet=[],maraca=null,AV=null;
+scene3.add(hero);
+function setAvatars(){if(!AV)return;document.querySelectorAll('.bunny-av').forEach(el=>{el.style.backgroundImage=`url(${AV})`;});}
+function renderAvatar(m){try{const c=document.createElement('canvas');c.width=c.height=256;
+ const r=new THREE.WebGLRenderer({canvas:c,antialias:true,alpha:true,preserveDrawingBuffer:true});
+ const sc=new THREE.Scene();sc.add(new THREE.HemisphereLight(0xffffff,0xB9AE8E,1));const dl=new THREE.DirectionalLight(0xffffff,.55);dl.position.set(2,4,6);sc.add(dl);
+ const cl=m.clone();cl.scale.setScalar(1);cl.rotation.y=-.3;sc.add(cl);
+ const cam=new THREE.PerspectiveCamera(30,1,.1,50);cam.position.set(0,2.1,7.4);cam.lookAt(0,1.85,0);
+ r.render(sc,cam);AV=c.toDataURL('image/png');r.dispose();setAvatars();}catch(e){}}
+(function loadBunny(){
+ const el=$('bunny-glb');
+ if(!el||!THREE.GLTFLoader||el.textContent.length<100) return;
+ try{const bin=atob(el.textContent.trim()),buf=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) buf[i]=bin.charCodeAt(i);
+  new THREE.GLTFLoader().parse(buf.buffer,'',g=>{
+   const m=g.scene;m.scale.setScalar(1.3);
+   m.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=false;}});
+   body.remove(temp);body.add(m);
+   const find=re=>{let r=null;m.traverse(o=>{if(!r&&re.test(o.name))r=o;});return r;};
+   feet=[/FOOT.*Left/i,/FOOT.*Right/i].map(find).filter(Boolean).map(o=>({o,y:o.position.y}));
+   const parts=[];m.traverse(o=>{if(/MARACA|PAW.*Left/i.test(o.name)&&o.parent===m)parts.push(o);});
+   if(parts.length){maraca=new THREE.Group();maraca.position.set(-1.1,1.1,.25);m.add(maraca);parts.forEach(o=>maraca.attach(o));}
+   renderAvatar(m);
+  },err=>console.warn('캐릭터 모델을 읽지 못했어요',err));
+ }catch(e){console.warn('캐릭터 모델을 읽지 못했어요',e);}
+})();
+
+// ---- 3D 고양이 ----
+const SPH=new THREE.SphereGeometry(1,16,12),EAR=new THREE.ConeGeometry(.13,.3,4);
+const COAT3={치즈:[0xE9A25A,0xC97F3A],고등어:[0x9EA59E,0x5E655F],검정:[0x34302D,0x211E1C],삼색:[0xFBF5E9,0xE09A52],흰색:[0xF7F2E6,0xD9CBB0]};
+const shMat=new THREE.MeshBasicMaterial({color:0x143823,transparent:true,opacity:.2});
+function ball(par,c,x,y,z,sx,sy,sz){const m=new THREE.Mesh(SPH,mat(c));m.position.set(x,y,z);m.scale.set(sx,sy??sx,sz??sx);m.castShadow=true;par.add(m);return m;}
+function buildCat3D(c){const [b,d]=COAT3[c.coat];const g=new THREE.Group();
+ const sh=new THREE.Mesh(new THREE.CircleGeometry(.8,20),shMat);sh.rotation.x=-Math.PI/2;sh.position.y=.04;g.add(sh);
+ ball(g,b,0,.55,0,.5,.42,.72);
+ for(const [lx,lz] of [[-.22,.38],[.22,.38],[-.22,-.4],[.22,-.4]]) cyl(.08,.08,.36,b,lx,.18,lz,{parent:g,seg:8});
+ const hg=new THREE.Group();hg.position.set(0,.98,.5);g.add(hg);
+ ball(hg,b,0,0,0,.38);
+ for(const s of [-1,1]){const e=new THREE.Mesh(EAR,mat(b));e.position.set(s*.2,.34,-.02);e.rotation.z=-s*.28;e.castShadow=true;hg.add(e);ball(hg,0xC59A3E,s*.13,.04,.33,.06);ball(hg,0x1E2A22,s*.13,.04,.37,.025,.05,.02);}
+ ball(hg,0xC9705A,0,-.06,.37,.04);
+ if(c.coat==='삼색'){ball(g,0xE09A52,.2,.75,-.1,.28,.2,.35);ball(g,0x34302D,-.22,.7,.25,.22,.18,.25);ball(hg,0xE09A52,-.14,.16,.1,.2,.18,.22);}
+ else if(c.coat!=='검정'&&c.coat!=='흰색'){for(const z of [-.35,0,.3]) ball(g,d,0,.92,z,.32,.06,.07);}
+ const tail=new THREE.Group();tail.position.set(0,.7,-.66);g.add(tail);
+ for(let i=0;i<4;i++){const s=cyl(.07,.07,.32,b,0,.14+i*.28,-i*.05,{parent:tail,seg:8});s.rotation.x=-.2*i;}
+ const ring=new THREE.Mesh(new THREE.RingGeometry(1.1,1.3,32),new THREE.MeshBasicMaterial({color:0xC59A3E,transparent:true,opacity:0}));ring.rotation.x=-Math.PI/2;ring.position.y=.05;g.add(ring);
+ g.position.set(c.x,0,c.z);g.scale.setScalar(1.35);g.rotation.y=Math.PI*(c.x%2?.3:-.6);scene3.add(g);
+ c.g=g;c.hg=hg;c.tail=tail;c.ring=ring;}
+CATS.forEach(buildCat3D);
+
+// 시설 기둥
+const CATCOL={free:0xD9B14F,food:0xC4513A,rest:0x2E6B47,service:0x5E7F6C};
+const gemGeo=new THREE.OctahedronGeometry(.5);
+POIS.forEach(p=>{
+ cyl(.75,.85,.16,0x1F5236,p.x,.08,p.z);cyl(.62,.62,.04,0xF7F0E2,p.x,.18,p.z,{cast:false});
+ cyl(.11,.11,1.5,0xF7F0E2,p.x,.95,p.z);
+ p.gem=new THREE.Mesh(gemGeo,mat(0xBDB8A8));p.gem.position.set(p.x,2.2,p.z);p.gem.castShadow=true;scene3.add(p.gem);
+ const ring=new THREE.Mesh(new THREE.RingGeometry(1.1,1.3,36),new THREE.MeshBasicMaterial({color:CATCOL[p.cat],transparent:true,opacity:0}));
+ ring.rotation.x=-Math.PI/2;ring.position.set(p.x,.05,p.z);scene3.add(ring);p.ring=ring;
+});
+
+// 안내 경로 점 · 발자국
+const dotGeo=new THREE.CircleGeometry(.22,16),dotMat=new THREE.MeshBasicMaterial({color:0xC59A3E});
+const dots=[];for(let i=0;i<160;i++){const d=new THREE.Mesh(dotGeo,dotMat);d.rotation.x=-Math.PI/2;d.visible=false;scene3.add(d);dots.push(d);}
+const TRAIL_MAX=700;
+const trail=new THREE.InstancedMesh(new THREE.CircleGeometry(.2,10),new THREE.MeshBasicMaterial({color:0xB9432F}),TRAIL_MAX);
+trail.count=0;trail.visible=false;scene3.add(trail);
+const dummy=new THREE.Object3D();dummy.rotation.x=-Math.PI/2;
+function drawTrail(){const t=DB.trail;for(let i=0;i<t.length;i++){dummy.position.set(t[i][0],.035,t[i][1]);dummy.updateMatrix();trail.setMatrixAt(i,dummy.matrix);}trail.count=t.length;trail.instanceMatrix.needsUpdate=true;}
+
+/* ---------- HTML 오버레이 ---------- */
+const poiLayer=$('pois'),zoneLayer=$('zones');
+POIS.forEach(p=>{
+ const b=document.createElement('button');b.className='poi';b.dataset.cat=p.cat;b.hidden=true;b.setAttribute('aria-label',p.name);
+ b.innerHTML=`<span class="poi-in"><span class="poi-ic">${svg(p.icon)}</span><span class="poi-base"></span><span class="poi-lb">${p.label}</span></span>`;
+ b.addEventListener('pointerdown',e=>e.stopPropagation());
+ b.addEventListener('click',e=>{e.stopPropagation();openPoi(p);});
+ poiLayer.appendChild(b);p.el=b;
+});
+CATS.forEach(c=>{
+ const b=document.createElement('button');b.className='cpin';b.hidden=true;
+ b.addEventListener('pointerdown',e=>e.stopPropagation());
+ b.addEventListener('click',e=>{e.stopPropagation();catPinClick(c);});
+ poiLayer.appendChild(b);c.el=b;c.mode='';
+});
+const ZL=[{t:'출발 홀 · 보안검색 전',x:-8,z:26},{t:'보안검색',x:0,z:7.6},{t:'에어사이드 · 보안검색 후',x:-8,z:3.6},{t:'탑승동 G21–G28',x:0,z:-16},{t:'호텔 연결통로',x:-36,z:22.6},{t:'푸드코트',x:-10,z:-10.4},{t:'라운지 구역',x:19,z:-4.2},
+ {t:'출구 · SALIDA',x:9,z:27.4,c:'exit'},{t:'타코 골목',x:-22,z:44.6},{t:'분수 광장',x:0,z:46.4},{t:'작은 공원',x:24,z:45},{t:'동네 시장 · MERCADO',x:0,z:62.6},{t:'버스 정류장',x:-20,z:44}];
+ZL.forEach(z=>{z.el=document.createElement('span');z.el.className='zl'+(z.c?' '+z.c:'');z.el.textContent=z.t;zoneLayer.appendChild(z.el);});
+
+/* ---------- 상태 ---------- */
+const st={x:-2,z:23,face:0,found:new Set()};
+if(DB.pos&&walkable(DB.pos[0],DB.pos[1])){st.x=DB.pos[0];st.z=DB.pos[1];}
+const dist=p=>Math.hypot(p.x-st.x,p.z-st.z);
+const fmt=n=>n.toLocaleString('ko-KR');
+const krw=m=>fmt(Math.round(m*RATE/100)*100);
+const meters=d=>`${fmt(Math.round(d*M/10)*10)}m`;
+const DIRS=['북','북동','동','남동','남','남서','서','북서'];
+const dirOf=(x,z)=>{const a=Math.atan2(x-st.x,-(z-st.z));return DIRS[(Math.round(a/(Math.PI/4))+8)%8]+'쪽';};
+const UI={view:'map',layer:'all',msg:0,lastCtx:''};
+
+const toastEl=$('toast'),toastIc=$('toastIc'),toastTx=$('toastTx');let toastT;
+function toast(icon,html){toastIc.innerHTML=icon.startsWith('<')?icon:svg(icon);toastTx.innerHTML=html;toastEl.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>toastEl.classList.remove('show'),2600);}
+function discover(p,quiet){if(st.found.has(p.id)){p.el.hidden=false;p.gem.visible=false;p.ring.material.opacity=.85;return;}
+ st.found.add(p.id);p.el.hidden=false;p.gem.visible=false;p.ring.material.opacity=.85;
+ if(!DB.found.includes(p.id)){DB.found.push(p.id);if(!quiet)logEv('fac',`${p.label} 발견`,p.name,p.id);}
+ if(!quiet){const inn=p.el.firstElementChild;inn.classList.remove('pop');void inn.offsetWidth;inn.classList.add('pop');toast(p.icon,`<small>새로 발견</small> ${p.label}`);}}
+
+/* ---------- 시트 ---------- */
+const sheet=$('sheet'),sheetBody=$('sheetBody'),sos=$('sos'),scrim=$('scrim');
+const X='<svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 2l10 10M12 2L2 12" stroke="#1E2A22" stroke-width="2.2" stroke-linecap="round"/></svg>';
+const BACK='<svg width="18" height="18" viewBox="0 0 18 18"><path d="M11.5 3L5.5 9l6 6" fill="none" stroke="#1E2A22" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function phraseHTML(es,ko,label){return `<div class="phrase"><small>${label||'스페인어로 보여주기'}</small><div class="es">${es}</div><div class="ko">${ko}</div><button class="cp" data-copy="${es.replace(/"/g,'&quot;')}">문장 복사</button></div>`;}
+function openSheet(html){closeSheets();sheetBody.innerHTML=html;sheet.classList.add('open');sheet.setAttribute('aria-hidden','false');sheet.scrollTop=0;scrim.classList.add('on');}
+function closeSheets(){[sheet,sos].forEach(s=>{s.classList.remove('open');s.setAttribute('aria-hidden','true');});scrim.classList.remove('on');}
+function openPoi(p){
+ const m=dist(p)*M,min=Math.max(1,Math.round(m/70));
+ const price=p.free?`<b class="free">무료</b>${p.alt?`<em>바우처 없으면 MXN ${fmt(p.alt)} · 약 ${krw(p.alt)}원</em>`:''}`
+  :p.mxn?`<b>MXN ${fmt(p.mxn)}</b><em>${p.unit} · 약 ${krw(p.mxn)}원</em>`:`<b>${p.priceText}</b>`;
+ const note=p.voucher?`<div class="law"><b>왜 무료예요?</b>${VOUCHER_NOTE}</div>`:(p.free?`<div class="law"><b>왜 무료예요?</b>공항이 누구나 쓸 수 있게 무료로 운영하는 시설이에요.</div>`:'');
+ openSheet(`<div class="sh-head"><span class="ic">${svg(p.icon)}</span><div><h2>${p.name}</h2><p>${p.es}</p></div><button class="xbtn" data-close aria-label="닫기">${X}</button></div>
+  <div class="tags" style="--c:var(--c-${p.cat})"><span class="tag cat ${p.cat}">${CAT_L[p.cat]}</span><span class="tag">${ZONE[regionOf(p.x,p.z)]}</span><span class="tag">${p.hours}</span></div>
+  <div class="rows"><div><small>가격</small>${price}</div><div><small>지금 위치에서</small><b>${fmt(Math.round(m/10)*10)}m</b><em>걸어서 약 ${min}분</em></div></div>
+  <p class="desc">${p.desc}</p>${note}${phraseHTML(p.ph[0],p.ph[1])}
+  <div class="acts"><button class="btn pri" data-act="nav-poi" data-id="${p.id}">여기로 안내</button><button class="btn sec" data-close>닫기</button></div>`);
+}
+$('sosList').innerHTML=SOS.map(([es,ko],i)=>phraseHTML(es,ko,`SOS ${i+1}`)).join('');
+$('sosBtn').onclick=()=>{closeSheets();sos.classList.add('open');sos.setAttribute('aria-hidden','false');scrim.classList.add('on');};
+scrim.addEventListener('click',closeSheets);
+canvas.addEventListener('pointerdown',closeSheets);
+addEventListener('keydown',e=>{if(e.key==='Escape')closeSheets();});
+
+/* ---------- 주변 탐색 (뚜벅냥이 '킁킁! 주변 탐색' 시트) ---------- */
+function explore(){
+ const items=[...POIS.map(p=>({t:'poi',p,d:dist(p)})),...CATS.map(c=>({t:'cat',c,d:dist(c)}))].sort((a,b)=>a.d-b.d).slice(0,8);
+ const nf=DB.found.length,nc=Object.keys(DB.friends).length;
+ openSheet(`<h3>킁킁! 주변 탐색</h3><p class="shsub">찾은 시설 ${nf}/${POIS.length} · 친구 고양이 ${nc}/${CATS.length}</p>
+ ${items.map(it=>{if(it.t==='poi'){const p=it.p,f=st.found.has(p.id);
+   return `<div class="li"><span class="av ${f?'':'unk'}">${svg(p.icon)}</span><span class="tx"><b>${f?p.name:'아직 못 찾은 시설'}</b><small>${meters(it.d)} · ${dirOf(p.x,p.z)}${f?' · '+CAT_L[p.cat]:' · 가까이 가면 보여요'}</small></span><button class="go" data-act="nav-poi" data-id="${p.id}">안내</button></div>`;}
+  const c=it.c,fr=DB.friends[c.id];
+  return `<div class="li"><span class="av ${fr?'':'unk'}">${catSVG(c.coat,fr?'happy':'calm')}</span><span class="tx"><b>${fr?esc(fr.name):'낯선 고양이'}</b><small>${meters(it.d)} · ${dirOf(c.x,c.z)} · ${fr?'친구':c.hint}</small></span><button class="go" data-act="nav-cat" data-id="${c.id}">안내</button></div>`;}).join('')}
+ <div class="warn" style="margin-top:12px">공항 밖은 해 지기 전(19:00)까지만 다녀오세요. 탑승까지 시간이 넉넉해도, 짐은 보관소에 맡기고 가볍게 나가요.</div>`);
+}
+$('exploreBtn').onclick=explore;
+function nearestWild(){let best=null;CATS.forEach(c=>{if(DB.friends[c.id])return;const d=dist(c);if(!best||d<best.d)best={c,d};});return best;}
+$('meetBtn').onclick=()=>{const w=nearestWild();
+ if(!w){toast('heart','모든 고양이와 친구가 됐어요!');return;}
+ if(w.d<RC+.5){if(w.c.cool>performance.now())toast('cat','이 고양이는 잠깐 쉬는 중이에요. 조금 뒤에 다시 와요');else openEnc(w.c);return;}
+ openSheet(`<h3>근처에 고양이가 없어요</h3><p class="shsub">가장 가까운 고양이는 ${w.c.hint}에 있어요.</p>
+  <div class="li"><span class="av unk">${catSVG(w.c.coat)}</span><span class="tx"><b>낯선 고양이</b><small>${meters(w.d)} · ${dirOf(w.c.x,w.c.z)}</small></span></div>
+  <div class="acts"><button class="btn pri" data-act="nav-cat" data-id="${w.c.id}">여기로 안내</button><button class="btn sec" data-close>닫기</button></div>`);};
+function catPinClick(c){const fr=DB.friends[c.id];if(fr){openCat(c.id);return;}
+ if(dist(c)<RC+.5&&!(c.cool>performance.now()))openEnc(c);else startNav({x:c.x,z:c.z,name:'낯선 고양이 · '+c.hint,cat:c});}
+
+/* ---------- 길 안내 ---------- */
+let nav=null;const navPill=$('navPill'),navName=$('navName'),navDist=$('navDist');
+function route(){const a={x:st.x,z:st.z};return [a,...gatesBetween(regionOf(a.x,a.z),regionOf(nav.x,nav.z)),{x:nav.x,z:nav.z}];}
+function startNav(t){nav=t;closeSheets();navPill.hidden=false;navName.textContent=t.name;POIS.forEach(q=>q.el.classList.toggle('target',q===t.poi));updNav();showView('map');}
+function endNav(){nav=null;navPill.hidden=true;dots.forEach(d=>d.visible=false);POIS.forEach(q=>q.el.classList.remove('target'));}
+$('navX').onclick=endNav;
+function updNav(){if(!nav)return;const pts=route();let L=0;for(let i=0;i<pts.length-1;i++)L+=Math.hypot(pts[i+1].x-pts[i].x,pts[i+1].z-pts[i].z);
+ const m=L*M;navDist.textContent=`${fmt(Math.round(m/10)*10)}m · 걸어서 약 ${Math.max(1,Math.round(m/70))}분`;return {pts,L};}
+function drawDots(t){if(!nav)return;const {pts,L}=updNav();const SP=1.3;let k=0,s=1.2+((t*1.8)%SP),seg=0,acc=0;
+ while(s<L-1&&k<dots.length){while(seg<pts.length-2){const l=Math.hypot(pts[seg+1].x-pts[seg].x,pts[seg+1].z-pts[seg].z);if(acc+l>=s)break;acc+=l;seg++;}
+  const a=pts[seg],b=pts[seg+1],l=Math.hypot(b.x-a.x,b.z-a.z)||1,u=(s-acc)/l;dots[k].position.set(a.x+(b.x-a.x)*u,.06,a.z+(b.z-a.z)*u);dots[k].visible=true;k++;s+=SP;}
+ for(;k<dots.length;k++)dots[k].visible=false;
+ const lim=nav.cat?3.6:2.4;
+ if(Math.hypot(nav.x-st.x,nav.z-st.z)<lim){const n=nav;endNav();
+  if(n.cat&&!DB.friends[n.cat.id])toast('cat','<small>도착</small> 고양이가 보여요! 만나기를 눌러요');else toast(n.poi?n.poi.icon:'pin',`<small>도착</small> ${esc(n.poi?n.poi.label:n.name)}`);}}
+
+/* ---------- 고양이 만남 (눈 천천히 깜빡이기) ---------- */
+const V={paw:$('v-paw'),arc:$('v-arc'),my:$('v-my'),enc:$('v-enc'),reg:$('v-reg'),cat:$('v-cat')};
+let ENC=null;
+function openEnc(c){closeSheets();endNav();
+ ENC={c,trust:0,need:c.pers==='도도함'?3:2,tries:5,P:c.pers==='겁쟁이'?1250:c.pers==='도도함'?1500:1800,win:c.pers==='애교쟁이'?.15:.11,t0:performance.now(),state:'play',mood:'calm',
+  msg:'링이 금색 원에 겹칠 때 눈을 천천히 깜빡여 보세요. 고양이에게 "안심해도 돼"라는 인사예요.'};
+ renderEnc();showView('enc');requestAnimationFrame(encLoop);}
+function heartsHTML(){let h='';for(let i=0;i<ENC.need;i++)h+=`<i class="${i<ENC.trust?'':'off'}">${svg('heart')}</i>`;return h;}
+function renderEnc(){const c=ENC.c,E=ENC;
+ const btns=E.state==='play'?`<button class="btn pri full" data-act="blink">천천히 눈 깜빡이기</button><button class="btn sec full" data-act="enc-leave">그냥 지나가기</button>`
+  :E.state==='won'?`<button class="btn pri full" data-act="reg">도감에 등록하기</button>`
+  :`<button class="btn sec full" data-act="enc-leave">지도로 돌아가기</button>`;
+ V.enc.innerHTML=`<div class="enc-bg">${scene(c.place,440,640,{title:true,cat:false,ty:.25,fs:.05})}</div>
+ <div class="enc-head"><button class="back" data-act="enc-leave" aria-label="지도로 돌아가기">${BACK}</button><span class="enc-chip">CAT ENCOUNTER · ${c.place}</span></div>
+ <div class="enc-stage"><div class="enc-target"></div><div class="enc-ring" id="encRing" ${E.state==='play'?'':'hidden'}></div><div class="enc-cat" id="encCat">${catSVG(c.coat,E.mood)}</div></div>
+ <div class="enc-card"><div class="enc-title"><b>${E.state==='won'?'마음을 열었어요!':'낯선 고양이'}</b><span class="chip on fixed">${c.coat}</span></div>
+  <div class="trust">신뢰 ${heartsHTML()}<span>남은 기회 ${E.tries}</span></div>
+  <p class="enc-msg" id="encMsg">${E.msg}</p>${btns}
+  <div class="warn">만지거나 먹이로 유인하지 말고, 고양이가 스스로 다가올 때만 기록해요.</div></div>`;}
+function encLoop(now){if(UI.view!=='enc'||!ENC||ENC.state!=='play')return;
+ const ph=((now-ENC.t0)%ENC.P)/ENC.P,s=1.7-ph*1.1,r=$('encRing');if(r)r.style.transform=`scale(${s.toFixed(3)})`;requestAnimationFrame(encLoop);}
+function blink(){const E=ENC;if(!E||E.state!=='play')return;
+ const ph=((performance.now()-E.t0)%E.P)/E.P,s=1.7-ph*1.1,good=Math.abs(s-1)<E.win;E.tries--;
+ if(good){E.trust++;E.mood='blink';E.msg='천천히 깜빡였더니 고양이도 눈을 깜빡여요. 신뢰 +1';}
+ else{E.mood='away';E.msg=s>1?'조금 일러요. 링이 금색 원까지 줄어들 때 깜빡여요.':'조금 늦었어요. 링이 금색 원에 닿는 순간을 노려요.';}
+ if(E.trust>=E.need){E.state='won';E.mood='happy';E.msg=`${E.c.coat} 고양이가 꼬리를 세우고 다가왔어요. 이름을 지어줄까요?`;}
+ else if(E.tries<=0){E.state='lost';E.mood='away';E.msg='오늘은 낯을 가려요. 조금 있다가 다시 와 봐요.';E.c.cool=performance.now()+15000;}
+ renderEnc();const cc=$('encCat');if(good&&cc){cc.classList.add('jump');setTimeout(()=>cc.classList.remove('jump'),250);}
+ if(E.state==='play'){setTimeout(()=>{if(ENC===E&&E.state==='play'){E.mood='calm';const el=$('encCat');if(el)el.innerHTML=catSVG(E.c.coat,'calm');}},800);}}
+
+/* ---------- 등록 (뚜벅냥이 CAT ENCOUNTER 폼) ---------- */
+let REG=null;
+function openReg(){const c=ENC.c;REG={c,name:c.sug,pers:c.pers,rel:[RELS[0]],memo:'',traits:''};renderReg();showView('reg');}
+function regText(){const n=$('rNm'),m=$('rMm'),t=$('rTr');if(n)REG.name=n.value;if(m)REG.memo=m.value;if(t)REG.traits=t.value;}
+function renderReg(){const r=REG,c=r.c,d=now2(),ok=r.name.trim().length>0;
+ V.reg.innerHTML=`<div class="vtop"><button class="back" data-act="reg-back" aria-label="뒤로">${BACK}</button><h1><span class="sub">CAT ENCOUNTER</span>새 친구를 등록해요</h1></div>
+ <div class="scroll"><div class="vcard" style="padding:0;overflow:hidden"><div style="position:relative;height:180px">${scene(c.place,406,180,{cat:false})}<div style="position:absolute;left:50%;bottom:-6px;width:150px;height:150px;margin-left:-75px">${catSVG(c.coat,'happy')}</div></div>
+  <div style="padding:12px 16px;font-size:13px;color:var(--ink-2);display:flex;justify-content:space-between"><span>${c.place} · ${placeName(st.x,st.z).split(' · ')[0]}</span><span>${d.full} ${d.t}</span></div></div>
+ <div class="vcard"><div class="lb">이름 *</div><input class="in" id="rNm" placeholder="고양이에게 이름을 지어주세요" value="${esc(r.name)}" maxlength="10"></div>
+ <div class="vcard"><div class="lb">털색 <em>· 만난 고양이 그대로예요</em></div><div class="chips"><span class="chip on fixed">${c.coat}</span></div></div>
+ <div class="vcard"><div class="lb">성격</div><div class="chips">${PERS.map(k=>`<button class="chip ${r.pers===k?'on':''}" data-act="r-pers" data-v="${k}">${k}</button>`).join('')}</div></div>
+ <div class="vcard"><div class="lb">어떤 교감이 있었나요? <em>(여러 개 선택)</em></div><div class="chips">${RELS.map(k=>`<button class="chip ${r.rel.includes(k)?'on':''}" data-act="r-rel" data-v="${k}">${k}</button>`).join('')}</div></div>
+ <div class="vcard"><div class="lb">만남의 순간</div><textarea class="in" id="rMm" placeholder="짧게 남겨보세요">${esc(r.memo)}</textarea></div>
+ <div class="vcard"><div class="lb">특징 메모 <em>(선택)</em></div><input class="in" id="rTr" placeholder="예: 오른쪽 귀 끝이 잘림 · 꼬리가 짧음" value="${esc(r.traits)}" maxlength="40"></div></div>
+ <div class="cta"><button class="btn pri full ${ok?'':'dis'}" id="rSave" data-act="r-save">도감에 등록하기</button></div>`;
+ const n=$('rNm');n.oninput=()=>{REG.name=n.value;$('rSave').classList.toggle('dis',!n.value.trim());};}
+function saveReg(){regText();const r=REG,c=r.c;if(!r.name.trim())return;const d=now2();
+ DB.friends[c.id]={name:r.name.trim(),coat:c.coat,pers:r.pers,rel:r.rel.slice(),memo:r.memo.trim(),traits:r.traits.trim(),first:d.full,time:d.t,place:c.place,trust:ENC?ENC.trust:2};
+ logEv('cat',`${r.name.trim()}와 친구가 됐어요`,`${c.place}${r.rel[0]?' · '+r.rel[0]:''}`,c.id);
+ c.mode='';ENC=null;openCat(c.id);toast('heart',`<small>등록 완료</small> ${esc(r.name.trim())} · 고양이 지도에 표시됐어요`);}
+
+/* ---------- 고양이 여권 ---------- */
+let CUR_CAT=null,BACK_TO='map';
+function passport(c,f){const nm=f.name.replace(/[^A-Za-z0-9가-힣]/g,'');
+ return `<div class="pp"><div class="hd"><small>REPUBLIC OF CATS</small><b>CAT PASSPORT</b></div>
+ <div class="bd"><div class="pho">${scene(c.place,112,140,{cat:false})}<div class="catc">${catSVG(c.coat,'calm')}</div></div>
+ <div class="f"><small>NAME</small><b>${esc(f.name)}</b><small>CITY</small><b>CIUDAD DE MÉXICO · ${esc(c.place)}</b><small>FIRST MET</small><b>${f.first} ${f.time||''}</b><small>PERSONALITY</small><b>${esc(f.pers)}</b><small>SPECIAL MEMORY</small><b>${esc(f.rel[0]||'—')}</b></div></div>
+ <div class="stamps"><div>MÉXICO</div><div>TRUST ${'♥'.repeat(f.trust||2)}</div><div>1 ENCOUNTER</div></div>
+ <div class="mrz">P&lt;CAT&lt;${esc(nm)}&lt;&lt;MEXICO&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br>${f.first.replace(/\./g,'')}&lt;${c.id.toUpperCase()}&lt;MANANA&lt;&lt;&lt;&lt;&lt;&lt;</div></div>`;}
+function openCat(id,from){CUR_CAT=id;BACK_TO=from||(UI.view==='arc'?'arc':UI.view==='paw'?'paw':'map');renderCatView();showView('cat');}
+function renderCatView(){const c=CATS.find(k=>k.id===CUR_CAT),f=DB.friends[CUR_CAT];if(!c||!f)return;
+ V.cat.innerHTML=`<div class="vtop"><button class="back" data-act="cat-back" aria-label="뒤로">${BACK}</button><h1>${esc(f.name)}</h1><button class="lnk" data-act="cat-map" data-id="${c.id}">지도에서 보기</button></div>
+ <div class="scroll"><div style="margin:4px 16px 0;border-radius:22px;overflow:hidden">${scene(c.place,408,130,{title:true,cat:false})}</div>${passport(c,f)}
+ <div class="vcard"><div class="lb">만남 기록</div>
+  <div class="li"><span class="av">${catSVG(c.coat,'happy')}</span><span class="tx"><b>첫 만남</b><small>${f.first} ${f.time||''} · ${esc(c.place)}</small></span></div>
+  ${f.rel.map(r=>`<div class="li"><span class="av">${svg('heart')}</span><span class="tx"><b>${esc(r)}</b><small>교감</small></span></div>`).join('')}
+  ${f.memo?`<div class="li"><span class="av">${svg('passport')}</span><span class="tx"><b>만남의 순간</b><small style="white-space:normal">${esc(f.memo)}</small></span></div>`:''}
+  ${f.traits?`<div class="li"><span class="av">${svg('paw')}</span><span class="tx"><b>특징 메모</b><small>${esc(f.traits)}</small></span></div>`:''}</div></div>
+ <div class="cta"><button class="btn pri full" data-act="cat-map" data-id="${c.id}">지도로 돌아가기</button></div>`;}
+
+/* ---------- 탭: 발자국 · 도감 · MY (뚜벅냥이 구조) ---------- */
+function renderPaw(){const nc=Object.keys(DB.friends).length;
+ V.paw.innerHTML=`<div class="vtop"><h1>발자국 · 여행 기록</h1></div><div class="scroll">
+ <div class="stat"><div><small>친구 고양이</small><b>${nc}마리</b></div><div><small>찾은 시설</small><b>${DB.found.length}곳</b></div><div><small>걸은 거리</small><b>${fmt(Math.round(DB.walked*M))}m</b></div></div>
+ ${DB.events.length?`<div class="day">오늘 · ${DB.events[0].d}</div>${DB.events.map(e=>{const c=e.k==='cat'?CATS.find(k=>k.id===e.ref):null,p=e.k==='fac'?POIS.find(k=>k.id===e.ref):null;
+  const av=c?catSVG(c.coat,'happy'):p?svg(p.icon):svg(e.k==='out'?'pin':'map');
+  return `<button class="ev" ${c&&DB.friends[c.id]?`data-act="open-cat" data-id="${c.id}"`:p?`data-act="open-poi" data-id="${p.id}"`:''}><span class="av">${av}</span><span><b>${esc(e.txt)}</b><small>${esc(e.sub||'')}</small></span><time>${e.t}</time></button>`;}).join('')}`
+ :'<div class="empty">아직 기록이 없어요<br>공항 시설을 찾거나 고양이를 만나면 여기에 쌓여요</div>'}</div>`;}
+let ARC_TAB='passport';
+function renderArc(){const t=ARC_TAB,nc=Object.keys(DB.friends).length;let bodyH='';
+ if(t==='passport')bodyH=`<div class="grid">${CATS.map(c=>{const f=DB.friends[c.id];
+  return f?`<button class="gc" data-act="open-cat" data-id="${c.id}"><div class="ph">${scene(c.place,180,118,{cat:false})}<div class="catc">${catSVG(c.coat,'calm')}</div></div><b>${esc(f.name)}</b><small>${esc(c.place)} · ${f.first.slice(5)}</small></button>`
+  :`<button class="gc unk" data-act="nav-cat" data-id="${c.id}"><div class="ph" style="background:var(--cream-2)"><div class="catc">${catSVG(c.coat)}</div></div><b>???</b><small>${c.hint}</small></button>`;}).join('')}</div>`;
+ else if(t==='meet'){const L=Object.entries(DB.friends).sort((a,b)=>(b[1].first+b[1].time).localeCompare(a[1].first+a[1].time));
+  bodyH=L.length?L.map(([id,f])=>{const c=CATS.find(k=>k.id===id);return `<button class="ev" data-act="open-cat" data-id="${id}"><span class="av">${catSVG(c.coat,'happy')}</span><span><b>${esc(f.name)} · 첫 만남</b><small>${f.first} · ${esc(c.place)}</small></span><time>${f.time||''}</time></button>`;}).join(''):'<div class="empty">아직 만난 고양이가 없어요<br>공항 출구 앞에 첫 고양이가 기다려요</div>';}
+ else{const M2=[['친구 고양이 3마리',nc>=3,`${Math.min(nc,3)}/3`],['공항 시설 10곳 찾기',DB.found.length>=10,`${Math.min(DB.found.length,10)}/10`],['공항 밖 동네 나가보기',DB.wentOut,DB.wentOut?'완료':'0/1'],['모든 고양이와 친구 되기',nc>=CATS.length,`${nc}/${CATS.length}`]];
+  bodyH=`<div class="vcard"><div class="lb">미션</div>${M2.map(m=>`<div class="mis ${m[1]?'done':''}"><i>${m[1]?'<svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 8.5l3.2 3L13 4.5" fill="none" stroke="#FBF5E9" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}</i><b>${m[0]}</b><span>${m[2]}</span></div>`).join('')}</div>
+  <div class="vcard"><div class="lb">찾은 공항 시설 ${DB.found.length}/${POIS.length}</div>${POIS.map(p=>{const f=st.found.has(p.id);return `<div class="li"><span class="av ${f?'':'unk'}">${svg(p.icon)}</span><span class="tx"><b>${f?p.name:'???'}</b><small>${f?CAT_L[p.cat]+' · '+p.hours:'공항 어딘가'}</small></span></div>`;}).join('')}</div>`;}
+ V.arc.innerHTML=`<div class="vtop"><h1>CAT ARCHIVE</h1></div><div class="seg2">${[['passport','고양이 여권'],['meet','만남 기록'],['coll','컬렉션']].map(s=>`<button class="${t===s[0]?'on':''}" data-act="arc-tab" data-v="${s[0]}">${s[1]}</button>`).join('')}</div><div class="scroll">${bodyH}</div>`;}
+function renderMy(){const m=DB.my,T=['모험','식도락','느긋','역사'];
+ V.my.innerHTML=`<div class="vtop"><h1>MY</h1></div><div class="scroll">
+ <div class="vcard" style="text-align:center;padding:24px 18px"><span class="bunny-av" style="display:block;width:132px;height:132px;margin:0 auto;box-shadow:0 4px 0 var(--green),0 0 0 4px var(--gold-2)"></span>
+  <input class="in" id="myName" value="${esc(m.name)}" maxlength="8" aria-label="토끼 이름" style="text-align:center;margin-top:16px;font-size:20px;background:transparent">
+  <div style="font-size:13px;color:var(--ink-2)">${m.type} 성향 여행 토끼 · 솜브레로와 마라카</div>
+  <div style="background:var(--green);color:var(--cream);border-radius:14px;padding:12px 14px;margin-top:14px;font-size:14px;line-height:1.5;font-weight:500;text-align:left">"${TYPE_LINES[m.type]}"</div></div>
+ <div class="vcard"><div class="lb">여행 성향 <em>· 마냐의 말투가 바뀌어요</em></div><div class="chips">${T.map(k=>`<button class="chip ${m.type===k?'on':''}" data-act="my-type" data-v="${k}">${k}</button>`).join('')}</div></div>
+ <div class="vcard"><div class="lb">내 항공편</div>
+  <div class="li"><span class="av">${svg('ticket')}</span><span class="tx"><b>AM 0021 · 서울 → 멕시코시티</b><small>4시간 40분 연착 · 칸쿤행 환승편 놓침</small></span></div>
+  <div class="li"><span class="av">${svg('ticket')}</span><span class="tx"><b>AM 0710 · 칸쿤행 · 내일 07:10</b><small>탑승구 G23 · 무료 식사·숙박 바우처 대상</small></span></div></div>
+ <div class="vcard"><div class="lb">내 데이터 <em>· 이 브라우저에만 저장돼요</em></div><button class="btn sec full" data-act="reset">처음 상태로 되돌리기</button></div></div>`;
+ setAvatars();const n=$('myName');n.onchange=()=>{DB.my.name=n.value.trim()||'마냐';save();};}
+
+/* ---------- 뷰 전환 ---------- */
+const tabs=$('tabs'),hud=$('hud');
+function showView(v){UI.view=v;Object.entries(V).forEach(([k,el])=>{el.hidden=k!==v;});
+ const tabbed=['map','paw','arc','my'].includes(v);tabs.hidden=!tabbed;hud.hidden=v!=='map';
+ poiLayer.hidden=zoneLayer.hidden=v!=='map';
+ tabs.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.tab===v));
+ if(v==='paw')renderPaw();else if(v==='arc')renderArc();else if(v==='my')renderMy();
+ if(v!=='map'){J.x=J.y=0;knob.style.transform='';}
+ closeSheets();}
+tabs.addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)showView(b.dataset.tab);});
+document.querySelectorAll('.seg [data-layer]').forEach(b=>b.addEventListener('click',()=>{UI.layer=b.dataset.layer;
+ document.querySelectorAll('.seg [data-layer]').forEach(x=>x.classList.toggle('on',x===b));trail.visible=UI.layer==='paw';
+ CATS.forEach(c=>c.mode='');}));
+
+/* ---------- 공용 클릭 ---------- */
+screenEl.addEventListener('click',e=>{
+ if(e.target.closest('[data-close]')){closeSheets();return;}
+ const cp=e.target.closest('[data-copy]');
+ if(cp){const txt=cp.dataset.copy;const done=()=>{cp.textContent='복사했어요';setTimeout(()=>cp.textContent='문장 복사',1500);};
+  const sel=()=>{const r=document.createRange();r.selectNodeContents(cp.parentElement.querySelector('.es'));const s=getSelection();s.removeAllRanges();s.addRange(r);cp.textContent='문장을 선택했어요';};
+  try{navigator.clipboard.writeText(txt).then(done,sel);}catch(_){sel();}return;}
+ const t=e.target.closest('[data-act]');if(!t)return;const a=t.dataset.act,id=t.dataset.id,v=t.dataset.v;
+ if(a==='nav-poi'){const p=POIS.find(q=>q.id===id);startNav({x:p.x,z:p.z,name:st.found.has(p.id)?p.name:'아직 못 찾은 시설',poi:p});}
+ else if(a==='nav-cat'){const c=CATS.find(q=>q.id===id);const f=DB.friends[c.id];startNav({x:c.x,z:c.z,name:f?f.name:'낯선 고양이 · '+c.hint,cat:c});}
+ else if(a==='blink')blink();
+ else if(a==='enc-leave'){ENC=null;showView('map');}
+ else if(a==='reg')openReg();
+ else if(a==='reg-back'){regText();showView('enc');renderEnc();}
+ else if(a==='r-pers'){regText();REG.pers=v;renderReg();}
+ else if(a==='r-rel'){regText();const r=REG.rel,i=r.indexOf(v);i<0?r.push(v):r.splice(i,1);renderReg();}
+ else if(a==='r-save')saveReg();
+ else if(a==='open-cat')openCat(id);
+ else if(a==='open-poi'){showView('map');openPoi(POIS.find(q=>q.id===id));}
+ else if(a==='cat-back')showView(BACK_TO);
+ else if(a==='cat-map'){showView('map');UI.layer='cat';document.querySelectorAll('.seg [data-layer]').forEach(x=>x.classList.toggle('on',x.dataset.layer==='cat'));trail.visible=false;CATS.forEach(c=>c.mode='');}
+ else if(a==='arc-tab'){ARC_TAB=v;renderArc();}
+ else if(a==='my-type'){DB.my.type=v;save();renderMy();UI.lastCtx='';}
+ else if(a==='reset'){DB=seed();save();st.found.clear();POIS.forEach(p=>{p.el.hidden=true;p.gem.visible=true;p.ring.material.opacity=0;});CATS.forEach(c=>{c.mode='';c.cool=0;});drawTrail();renderMy();toast('map','처음 상태로 돌아왔어요');}
+});
+$('bub').onclick=()=>{UI.msg++;UI.lastCtx='';};
+
+/* ---------- 조이스틱 · 키보드 ---------- */
+const joy=$('joy'),knob=$('knob');
+const J={x:0,y:0,id:null};
+function joyMove(e){const r=joy.getBoundingClientRect();let dx=(e.clientX-(r.left+r.width/2))/S,dy=(e.clientY-(r.top+r.height/2))/S;const max=38,d=Math.hypot(dx,dy);
+ if(d>max){dx*=max/d;dy*=max/d;}knob.style.transform=`translate(${dx}px,${dy}px)`;J.x=dx/max;J.y=dy/max;}
+joy.addEventListener('pointerdown',e=>{J.id=e.pointerId;joy.setPointerCapture(e.pointerId);closeSheets();joyMove(e);});
+joy.addEventListener('pointermove',e=>{if(J.id===e.pointerId)joyMove(e);});
+const joyEnd=e=>{if(J.id!==e.pointerId)return;J.id=null;J.x=J.y=0;knob.style.transform='';};
+joy.addEventListener('pointerup',joyEnd);joy.addEventListener('pointercancel',joyEnd);
+const keys=new Set();const KM={ArrowUp:[0,-1],KeyW:[0,-1],ArrowDown:[0,1],KeyS:[0,1],ArrowLeft:[-1,0],KeyA:[-1,0],ArrowRight:[1,0],KeyD:[1,0]};
+addEventListener('keydown',e=>{if(KM[e.code]&&UI.view==='map'&&!(e.target.matches&&e.target.matches('input,textarea'))){keys.add(e.code);e.preventDefault();}});
+addEventListener('keyup',e=>keys.delete(e.code));
+addEventListener('blur',()=>keys.clear());
+
+/* ---------- 말풍선 · 상단 상태 ---------- */
+const bubT=$('bubT'),placeTx=$('placeTx'),flight=$('flight'),flTitle=$('flTitle'),flSub=$('flSub');
+function updBubble(){const w=nearestWild(),out=isOut(st.x,st.z);let ctx,txt;
+ if(w&&w.d<10&&!(w.c.cool>performance.now())){ctx='near'+UI.msg;txt=LINES.near[UI.msg%2];}
+ else if(out){ctx='out'+UI.msg+DB.my.type;txt=UI.msg%2?LINES.out[(UI.msg>>1)%2]:TYPE_LINES[DB.my.type];}
+ else{ctx='in'+UI.msg;txt=LINES.in[UI.msg%3];}
+ if(ctx!==UI.lastCtx){UI.lastCtx=ctx;bubT.textContent=txt;}}
+let wasOut=null;
+function updStatus(){const out=isOut(st.x,st.z);placeTx.textContent=placeName(st.x,st.z);
+ if(out!==wasOut){flight.classList.toggle('out',out);
+  flTitle.textContent=out?'공항 밖이에요 · 19:00 전에 돌아오기':'칸쿤행 AM 0710 · 내일 07:10';
+  flSub.textContent=out?'공인 택시 말고 호객은 거절 · 출구는 북쪽':'무료 식사·숙박 바우처 대상 · G23';
+  if(wasOut!==null){if(out){toast('pin','<small>공항 밖</small> 동네 고양이를 찾아봐요');if(!DB.wentOut){DB.wentOut=true;logEv('out','공항 밖으로 나갔어요','공항 출구 앞');}}else toast('map','<small>공항 안</small> 다시 공항으로 들어왔어요');}
+  wasOut=out;}}
+
+/* ---------- 루프 ---------- */
+const focus=new THREE.Vector3(),OFF=new THREE.Vector3(0,24,26),v3=new THREE.Vector3();
+let last=performance.now(),slowT=0,walkT=0,lastTrail=null,saveT=0;
+function project(x,y,z){v3.set(x,y,z).project(camera);return {sx:(v3.x+1)/2*W,sy:(1-v3.y)/2*H,off:v3.z>1||Math.abs(v3.x)>1.4||Math.abs(v3.y)>1.4};}
+function catMode(c,d){const fr=DB.friends[c.id],L=UI.layer;
+ if(!fr&&d<RC&&!(c.cool>performance.now()))return 'near';
+ if(fr&&(L==='all'||L==='cat'))return 'friend';
+ if(!fr&&L==='cat'&&d<45)return 'hint';return '';}
+function frame(now){
+ const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/1000;
+ if(UI.view==='map'){
+ let mx=J.x,mz=J.y;keys.forEach(k=>{mx+=KM[k][0];mz+=KM[k][1];});
+ let mag=Math.hypot(mx,mz);if(mag>1){mx/=mag;mz/=mag;mag=1;}
+ const moving=mag>.08;
+ if(moving){const ox=st.x,oz=st.z,nx=st.x+mx*SPEED*dt,nz=st.z+mz*SPEED*dt;
+  if(walkable(nx,st.z))st.x=nx;if(walkable(st.x,nz))st.z=nz;
+  DB.walked+=Math.hypot(st.x-ox,st.z-oz);
+  const target=Math.atan2(mx,mz);let df=target-st.face;df=Math.atan2(Math.sin(df),Math.cos(df));st.face+=df*Math.min(1,dt*12);
+  walkT+=dt;
+  if(!lastTrail||Math.hypot(st.x-lastTrail[0],st.z-lastTrail[1])>1.6){lastTrail=[st.x,st.z];DB.trail.push([+st.x.toFixed(1),+st.z.toFixed(1)]);if(DB.trail.length>TRAIL_MAX)DB.trail.shift();drawTrail();}}
+ hero.position.set(st.x,0,st.z);hero.rotation.y=st.face;
+ const ph=walkT*11;
+ body.position.y=moving?Math.abs(Math.sin(ph))*.22:0;
+ body.rotation.z=moving?Math.sin(ph)*.06:0;
+ body.scale.y=moving?1:1+Math.sin(t*2.4)*.015;
+ feet.forEach((f,i)=>{f.o.position.y=f.y+(moving?Math.max(0,Math.sin(ph+(i?Math.PI:0)))*.25:0);});
+ if(maraca) maraca.rotation.z=moving?Math.sin(t*22)*.35:Math.sin(t*3)*.08;
+ focus.lerp(hero.position,1-Math.exp(-dt*7));
+ camera.position.copy(focus).add(OFF);camera.lookAt(focus.x,0,focus.z-6);
+ sun.position.set(focus.x-16,34,focus.z+12);sun.target.position.copy(focus);
+ POIS.forEach(p=>{const d=dist(p);
+  if(!st.found.has(p.id)){p.gem.rotation.y=t*1.6;p.gem.position.y=2.2+Math.sin(t*2+p.x)*.15;if(d<R)discover(p);}
+  else p.ring.scale.setScalar(d<R?1+Math.sin(t*3)*.08:1);});
+ CATS.forEach((c,i)=>{const d=dist(c),fr=DB.friends[c.id];
+  c.tail.rotation.z=Math.sin(t*(fr?3:2)+i)*.45;
+  if(d<12){const a=Math.atan2(st.x-c.x,st.z-c.z);let df=a-c.g.rotation.y;df=Math.atan2(Math.sin(df),Math.cos(df));c.g.rotation.y+=df*Math.min(1,dt*3);}
+  c.ring.material.opacity=fr?.8:0;c.g.position.y=fr?Math.abs(Math.sin(t*3+i))*.06:0;});
+ drawDots(t);
+ renderer.render(scene3,camera);
+ const showFac=UI.layer==='all'||UI.layer==='fac';
+ POIS.forEach(p=>{if(p.el.hidden)return;const d=dist(p),q=project(p.x,1.7,p.z);
+  if(!showFac||q.off||d>46){p.el.style.visibility='hidden';return;}p.el.style.visibility='visible';
+  p.el.style.transform=`translate(${q.sx.toFixed(1)}px,${q.sy.toFixed(1)}px) translate(-50%,-78%) scale(${d<R?1:.8})`;
+  p.el.style.zIndex=Math.round(q.sy);p.el.classList.toggle('far',d>=R);});
+ CATS.forEach(c=>{const d=dist(c),m=catMode(c,d),el=c.el;
+  if(m!==c.mode){c.mode=m;el.hidden=!m;el.className='cpin '+m;const f=DB.friends[c.id];
+   el.setAttribute('aria-label',m==='near'?'고양이 만나기':m==='friend'?f.name+' 여권 보기':'낯선 고양이');
+   el.innerHTML=m==='near'?`<span class="cp"><i>${catSVG(c.coat)}</i>만나기</span>`:m==='friend'?`<span class="cp"><i>${catSVG(c.coat,'happy')}</i>${esc(f.name)}</span>`:m==='hint'?`<span class="cp"><i>${catSVG(c.coat)}</i>${meters(d)}</span>`:'';}
+  if(!m)return;const q=project(c.x,2.6,c.z);
+  if(q.off){el.style.visibility='hidden';return;}el.style.visibility='visible';
+  if(m==='hint'){const s=el.querySelector('.cp');if(s&&s.lastChild)s.lastChild.textContent=meters(d);}
+  el.style.transform=`translate(${q.sx.toFixed(1)}px,${q.sy.toFixed(1)}px) translate(-50%,-100%)`;el.style.zIndex=1000+Math.round(q.sy);});
+ ZL.forEach(z=>{const q=project(z.x,0,z.z),d=Math.hypot(z.x-st.x,z.z-st.z);
+  if(q.off||d>40){z.el.style.visibility='hidden';return;}z.el.style.visibility='visible';z.el.style.transform=`translate(${q.sx.toFixed(1)}px,${q.sy.toFixed(1)}px) translate(-50%,-50%)`;});
+ slowT-=dt;if(slowT<=0){slowT=.3;updBubble();updStatus();}
+ saveT-=dt;if(saveT<=0){saveT=3;DB.pos=[+st.x.toFixed(1),+st.z.toFixed(1)];save();}
+ }
+ requestAnimationFrame(frame);
+}
+
+function start(){
+ hero.position.set(st.x,0,st.z);focus.copy(hero.position);
+ DB.found.forEach(id=>{const p=POIS.find(q=>q.id===id);if(p)discover(p,true);});
+ drawTrail();updStatus();updBubble();requestAnimationFrame(frame);
+}
+start();
+})();
+</script>
